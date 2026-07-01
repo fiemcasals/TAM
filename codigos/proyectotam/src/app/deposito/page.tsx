@@ -168,7 +168,7 @@ export default function DepositoPage() {
         setInventorySortConfig({ key, direction })
     }
 
-    const sortedInventory = [...supplyBatches.filter(b => b.available_quantity > 0)].sort((a, b) => {
+    const sortedInventory = [...supplyBatches].sort((a, b) => {
         if (!inventorySortConfig) return 0
 
         const supplyA = supplies.find(s => s.id === a.supply_id)
@@ -382,7 +382,7 @@ export default function DepositoPage() {
                                                     <Badge variant="outline" className="bg-slate-50">{category}</Badge>
                                                 </TableCell>
                                                 <TableCell className="font-semibold text-slate-700">{name}</TableCell>
-                                                <TableCell className="font-bold text-blue-700 text-lg">
+                                                <TableCell className={`font-bold text-lg ${batch.available_quantity > 0 ? 'text-blue-700' : 'text-red-500'}`}>
                                                     <div className="flex items-center gap-2 cursor-pointer hover:underline" onClick={() => (batch.serial_numbers && batch.serial_numbers.length > 0) && setViewSerialsModal(batch)}>
                                                         {batch.available_quantity} <span className="text-xs font-normal text-slate-500">uds</span>
                                                         {batch.serial_numbers && batch.serial_numbers.length > 0 && <List className="h-4 w-4 text-blue-500" data-title="Ver series registradas" />}
@@ -405,7 +405,7 @@ export default function DepositoPage() {
                                         )
                                     })}
 
-                                    {supplyBatches.filter(b => b.available_quantity > 0).length === 0 && (
+                                    {supplyBatches.length === 0 && (
                                         <TableRow>
                                             <TableCell colSpan={6} className="h-32 text-center text-slate-500">
                                                 <div className="flex flex-col items-center justify-center gap-2">
