@@ -1,0 +1,11 @@
+# Ignore portable binaries, database data, and log files
+codigos/portable/
+*.log
+
+# Ignore node_modules, build cache, and environment secrets recursively
+**/node_modules/
+**/.next/
+**/.vercel/
+**/build/
+**/*.tsbuildinfo
+**/.env*

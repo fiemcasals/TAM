@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 250">
+    <defs>
+        <g id="ray-straight">
+            <path d="M300 130 L298 35 L302 35 Z" fill="#d68d37" />
+        </g>
+        <g id="ray-wavy">
+            <path d="M300 130 Q 290 80 300 50 Q 310 30 300 25 Q 295 20 300 15 L 302 15 Q 315 30 300 60 Q 290 90 300 130 Z" fill="#d68d37" />
+        </g>
+    </defs>
+
+    <!-- 32 rays (16 straight, 16 wavy alternating) -->
+    <use href="#ray-straight" transform="rotate(0 300 130)" />
+    <use href="#ray-wavy" transform="rotate(11.25 300 130)" />
+    <use href="#ray-straight" transform="rotate(22.5 300 130)" />
+    <use href="#ray-wavy" transform="rotate(33.75 300 130)" />
+    <use href="#ray-straight" transform="rotate(45 300 130)" />
+    <use href="#ray-wavy" transform="rotate(56.25 300 130)" />
+    <use href="#ray-straight" transform="rotate(67.5 300 130)" />
+    <use href="#ray-wavy" transform="rotate(78.75 300 130)" />
+    <use href="#ray-straight" transform="rotate(90 300 130)" />
+    <use href="#ray-wavy" transform="rotate(101.25 300 130)" />
+    <use href="#ray-straight" transform="rotate(112.5 300 130)" />
+    <use href="#ray-wavy" transform="rotate(123.75 300 130)" />
+    <use href="#ray-straight" transform="rotate(135 300 130)" />
+    <use href="#ray-wavy" transform="rotate(146.25 300 130)" />
+    <use href="#ray-straight" transform="rotate(157.5 300 130)" />
+    <use href="#ray-wavy" transform="rotate(168.75 300 130)" />
+    <use href="#ray-straight" transform="rotate(180 300 130)" />
+    <use href="#ray-wavy" transform="rotate(191.25 300 130)" />
+    <use href="#ray-straight" transform="rotate(202.5 300 130)" />
+    <use href="#ray-wavy" transform="rotate(213.75 300 130)" />
+    <use href="#ray-straight" transform="rotate(225 300 130)" />
+    <use href="#ray-wavy" transform="rotate(236.25 300 130)" />
+    <use href="#ray-straight" transform="rotate(247.5 300 130)" />
+    <use href="#ray-wavy" transform="rotate(258.75 300 130)" />
+    <use href="#ray-straight" transform="rotate(270 300 130)" />
+    <use href="#ray-wavy" transform="rotate(281.25 300 130)" />
+    <use href="#ray-straight" transform="rotate(292.5 300 130)" />
+    <use href="#ray-wavy" transform="rotate(303.75 300 130)" />
+    <use href="#ray-straight" transform="rotate(315 300 130)" />
+    <use href="#ray-wavy" transform="rotate(326.25 300 130)" />
+    <use href="#ray-straight" transform="rotate(337.5 300 130)" />
+    <use href="#ray-wavy" transform="rotate(348.75 300 130)" />
+
+    <!-- Sun core -->
+    <circle cx="300" cy="130" r="45" fill="#f0b660" />
+    
+    <!-- Face -->
+    <path d="M285 120 Q 290 115 295 120" stroke="#8a531b" fill="none" stroke-width="2" />
+    <circle cx="290" cy="120" r="2" fill="#8a531b" />
+    <path d="M305 120 Q 310 115 315 120" stroke="#8a531b" fill="none" stroke-width="2" />
+    <circle cx="310" cy="120" r="2" fill="#8a531b" />
+    <!-- Nose -->
+    <path d="M300 125 L 298 135 L 302 135 Z" fill="#8a531b" />
+    <!-- Mouth -->
+    <path d="M290 145 Q 300 155 310 145" stroke="#8a531b" fill="none" stroke-width="3" />
+    
+    <!-- Letters DI -->
+    <text x="25" y="195" font-family="'Arial Black', Impact, sans-serif" font-weight="900" font-size="190" fill="#6787b7" letter-spacing="-8">DI</text>
+    
+    <!-- Letters ID -->
+    <text x="430" y="195" font-family="'Arial Black', Impact, sans-serif" font-weight="900" font-size="190" fill="#6787b7" letter-spacing="-8">ID</text>
+    
+    <!-- The white G placed precisely over the center -->
+    <text x="295" y="200" font-family="'Arial Black', Impact, sans-serif" font-weight="900" font-size="145" fill="#ffffff" text-anchor="middle">G</text>
+</svg>

@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  lastName  String?
+  role      String   // deposit_manager, operator, supervisor, project_manager
+  email     String   @unique
+  password  String   // Will be hashed
+  status    String   @default("active") // active, inactive
+  createdAt DateTime @default(now())
+}
+
+model Vehicle {
+  id          String   @id @default(uuid())
+  ni          String   @unique
+  origen_unit String
+  status      String   @default("out_of_service") // out_of_service, in_plant, in_service
+  entry_date  DateTime @default(now())
+
+  activities  VehicleActivity[]
+}
+
+model Activity {
+  id              String   @id @default(uuid())
+  name            String
+  suggested_order Int
+
+  checklists      ChecklistItem[]
+  vehicleActs     VehicleActivity[]
+}
+
+model ChecklistItem {
+  id          String   @id @default(uuid())
+  activity_id String
+  description String
+
+  activity    Activity @relation(fields: [activity_id], references: [id], onDelete: Cascade)
+  vehicleItems VehicleChecklistItem[]
+}
+
+model Supply {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  family      String?
+
+  batches     SupplyBatch[]
+}
+
+model SupplyBatch {
+  id                 String   @id @default(uuid())
+  supply_id          String
+  batch_number       String?
+  serial_numbers     String[] // PostgreSQL array of strings
+  available_quantity Int      @default(1)
+  entry_date         DateTime @default(now())
+
+  supply             Supply   @relation(fields: [supply_id], references: [id], onDelete: Cascade)
+  consumptions       ActivityMaterialConsumption[]
+}
+
+model VehicleActivity {
+  id            String   @id @default(uuid())
+  vehicle_id    String
+  activity_id   String
+  status        String   @default("pending") // pending, in_progress, pending_review, completed
+  operator_id   String?
+  supervisor_id String?
+  started_at    DateTime?
+  completed_at  DateTime?
+  verified_at   DateTime?
+
+  vehicle       Vehicle  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
+  activity      Activity @relation(fields: [activity_id], references: [id], onDelete: Cascade)
+  
+  checklistItems VehicleChecklistItem[]
+  consumptions   ActivityMaterialConsumption[]
+}
+
+model VehicleChecklistItem {
+  id                  String   @id @default(uuid())
+  vehicle_activity_id String
+  checklist_id        String
+  is_completed        Boolean  @default(false)
+  completed_at        DateTime?
+  operator_id         String?
+
+  vehicleActivity     VehicleActivity @relation(fields: [vehicle_activity_id], references: [id], onDelete: Cascade)
+  checklistItem       ChecklistItem   @relation(fields: [checklist_id], references: [id], onDelete: Cascade)
+}
+
+model ActivityMaterialConsumption {
+  id                  String   @id @default(uuid())
+  vehicle_activity_id String
+  supply_batch_id     String
+  serial_number       String?
+  quantity_used       Int
+  operator_id         String
+  timestamp           DateTime @default(now())
+
+  vehicleActivity     VehicleActivity @relation(fields: [vehicle_activity_id], references: [id], onDelete: Cascade)
+  supplyBatch         SupplyBatch     @relation(fields: [supply_batch_id], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  user_id     String
+  action      String
+  entity_type String
+  entity_id   String
+  old_value   String?
+  new_value   String?
+  timestamp   DateTime @default(now())
+}

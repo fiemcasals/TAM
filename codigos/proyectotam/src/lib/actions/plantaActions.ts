@@ -1,0 +1,222 @@
+"use server"
+
+import { PrismaClient } from '@prisma/client'
+import { getSession } from '@/lib/session'
+
+const prisma = new PrismaClient()
+
+// VEHICLES
+export async function getVehicles() {
+  const session = await getSession()
+  if (!session) {
+    return { success: false, vehicles: [], vehicleActivities: [], vehicleChecklistItems: [], message: "No autenticado" }
+  }
+
+  const vehicles = await prisma.vehicle.findMany({
+    orderBy: { entry_date: 'desc' }
+  })
+  const vehicleActivities = await prisma.vehicleActivity.findMany()
+  const vehicleChecklistItems = await prisma.vehicleChecklistItem.findMany()
+
+  return { success: true, vehicles, vehicleActivities, vehicleChecklistItems }
+}
+
+export async function addVehicle(data: { ni: string, origen_unit: string, status: string }) {
+  try {
+    const session = await getSession()
+    if (!session || session.role !== 'project_manager') {
+      return { success: false, message: "No autorizado. Se requieren permisos de Project Manager." }
+    }
+
+    const vehicle = await prisma.vehicle.create({
+      data: {
+        ni: data.ni,
+        origen_unit: data.origen_unit,
+        status: data.status
+      }
+    })
+    
+    // Auto init activities
+    const activities = await prisma.activity.findMany()
+    const mapped = activities.map(act => ({
+      vehicle_id: vehicle.id,
+      activity_id: act.id,
+      status: 'pending'
+    }))
+    
+    if (mapped.length > 0) {
+      await prisma.vehicleActivity.createMany({ data: mapped })
+    }
+
+    return { success: true, vehicle }
+  } catch (error) {
+    console.error(error)
+    return { success: false, message: "Error al agregar vehículo" }
+  }
+}
+
+export async function updateVehicleStatus(id: string, status: string) {
+  try {
+    const session = await getSession()
+    if (!session || (session.role !== 'project_manager' && session.role !== 'supervisor')) {
+      return { success: false, message: "No autorizado." }
+    }
+
+    const updated = await prisma.vehicle.update({
+      where: { id },
+      data: { status }
+    })
+    return { success: true, vehicle: updated }
+  } catch (e) {
+    return { success: false, message: "Error al actualizar estado" }
+  }
+}
+
+export async function updateVehicle(id: string, data: { ni: string, origen_unit: string, status: string }) {
+  try {
+    const session = await getSession()
+    if (!session || session.role !== 'project_manager') {
+      return { success: false, message: "No autorizado. Se requieren permisos de Project Manager." }
+    }
+
+    const updated = await prisma.vehicle.update({
+      where: { id },
+      data: {
+        ni: data.ni,
+        origen_unit: data.origen_unit,
+        status: data.status
+      }
+    })
+    return { success: true, vehicle: updated }
+  } catch (error) {
+    console.error(error)
+    return { success: false, message: "Error al actualizar vehículo" }
+  }
+}
+
+export async function deleteVehicle(id: string) {
+  try {
+    const session = await getSession()
+    if (!session || session.role !== 'project_manager') {
+      return { success: false, message: "No autorizado. Se requieren permisos de Project Manager." }
+    }
+
+    await prisma.vehicle.delete({ where: { id } })
+    return { success: true }
+  } catch (e) {
+    return { success: false, message: "Error al eliminar vehículo" }
+  }
+}
+
+// PLANTA / ACTIVITIES
+export async function getVehicleDetails(vehicleId: string) {
+  try {
+    const session = await getSession()
+    if (!session) {
+      return { success: false, message: "No autenticado." }
+    }
+
+    const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } })
+    const vehicleActivities = await prisma.vehicleActivity.findMany({ where: { vehicle_id: vehicleId } })
+    const vehicleChecklistItems = await prisma.vehicleChecklistItem.findMany({ 
+      where: { vehicleActivity: { vehicle_id: vehicleId } } 
+    })
+    const activityMaterialConsumptions = await prisma.activityMaterialConsumption.findMany({
+      where: { vehicleActivity: { vehicle_id: vehicleId } }
+    })
+    
+    return { success: true, data: { vehicle, vehicleActivities, vehicleChecklistItems, activityMaterialConsumptions } }
+  } catch (e) {
+    return { success: false, message: "Error getting details" }
+  }
+}
+
+export async function getCatalogData() {
+  try {
+    const session = await getSession()
+    if (!session) {
+      return { success: false, message: "No autenticado." }
+    }
+
+    const activities = await prisma.activity.findMany({ orderBy: { suggested_order: 'asc' } })
+    const checklistItems = await prisma.checklistItem.findMany()
+    return { success: true, data: { activities, checklistItems } }
+  } catch (e) {
+    return { success: false, message: "Error cargando catálogo" }
+  }
+}
+
+export async function toggleChecklistItemAction(vehicleActivityId: string, checklistId: string, operatorId: string) {
+  try {
+    const session = await getSession()
+    if (!session || (session.role !== 'operator' && session.role !== 'project_manager')) {
+      return { success: false, message: "No autorizado. Se requieren permisos de Operario." }
+    }
+
+    const existing = await prisma.vehicleChecklistItem.findFirst({
+      where: { vehicle_activity_id: vehicleActivityId, checklist_id: checklistId }
+    })
+
+    if (existing) {
+      // Toggle off -> Delete
+      await prisma.vehicleChecklistItem.delete({ where: { id: existing.id } })
+    } else {
+      // Toggle on -> Create
+      await prisma.vehicleChecklistItem.create({
+        data: {
+          vehicle_activity_id: vehicleActivityId,
+          checklist_id: checklistId,
+          is_completed: true,
+          completed_at: new Date(),
+          operator_id: operatorId
+        }
+      })
+
+      // Auto-transition to in_progress if currently pending
+      const vAct = await prisma.vehicleActivity.findUnique({ where: { id: vehicleActivityId } })
+      if (vAct && vAct.status === 'pending') {
+        await prisma.vehicleActivity.update({
+          where: { id: vehicleActivityId },
+          data: { status: 'in_progress' }
+        })
+      }
+    }
+    return { success: true }
+  } catch (error) {
+    console.error(error)
+    return { success: false }
+  }
+}
+
+export async function updateActivityStatusAction(vehicleActivityId: string, status: string, userId: string) {
+  try {
+    const session = await getSession()
+    if (!session) {
+      return { success: false, message: "No autenticado." }
+    }
+
+    if (status === 'completed') {
+      if (session.role !== 'supervisor' && session.role !== 'project_manager') {
+        return { success: false, message: "No autorizado. Se requieren permisos de Supervisor para aprobar la actividad." }
+      }
+    } else {
+      if (session.role !== 'operator' && session.role !== 'supervisor' && session.role !== 'project_manager') {
+        return { success: false, message: "No autorizado." }
+      }
+    }
+
+    await prisma.vehicleActivity.update({
+      where: { id: vehicleActivityId },
+      data: {
+        status,
+        supervisor_id: status === 'completed' ? userId : undefined,
+        verified_at: status === 'completed' ? new Date() : undefined
+      }
+    })
+    return { success: true }
+  } catch (error) {
+     return { success: false }
+  }
+}
+
+
