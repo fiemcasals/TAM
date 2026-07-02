@@ -62,6 +62,48 @@ Si prefieres ejecutar el entorno paso a paso usando la terminal de Windows en la
    ```
 7. Abre **[http://localhost:3000](http://localhost:3000)** en tu navegador.
 
+### Opción 3: Despliegue en Linux (Recomendado para entornos no Windows)
+Si te encuentras en un entorno Linux (como Ubuntu o Debian), puedes utilizar Docker Compose o Node.js de forma nativa.
+
+**Con Docker Compose (Opción más fácil):**
+1. Abre una terminal y navega a la carpeta del proyecto:
+   ```bash
+   cd TAM/codigos/proyectotam
+   ```
+2. Crea un archivo `.env` en esa misma carpeta con las variables necesarias, por ejemplo:
+   ```bash
+   POSTGRES_USER=userTAM
+   POSTGRES_PASSWORD=passwordTAM
+   POSTGRES_DB=tam_db
+   ```
+3. Levanta los servicios con Docker Compose en segundo plano:
+   ```bash
+   docker compose up -d
+   ```
+4. Aplica las migraciones de la base de datos de Prisma y carga los datos semilla (ejecutando dentro del contenedor de la app):
+   ```bash
+   docker exec -it tam_app npx prisma db push
+   docker exec -it tam_app npm run prisma db seed
+   ```
+5. Abre **[http://localhost:3000](http://localhost:3000)** en tu navegador web.
+
+**Con Node.js de forma nativa:**
+1. Navega a la carpeta del proyecto:
+   ```bash
+   cd TAM/codigos/proyectotam
+   ```
+2. Instala las dependencias:
+   ```bash
+   npm install
+   ```
+3. Configura un servicio local de PostgreSQL (o levántalo con Docker) y configura la variable `DATABASE_URL` en tu entorno (ej. en el archivo `.env`).
+4. Sincroniza la base de datos e inicia el servidor en modo desarrollo:
+   ```bash
+   npx prisma db push
+   npm run dev
+   ```
+5. Accede a **[http://localhost:3000](http://localhost:3000)**.
+
 ---
 
 ## 👥 Roles del Sistema y Acceso Inicial
