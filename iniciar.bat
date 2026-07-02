@@ -60,6 +60,11 @@ createdb.exe -U userTAM -h localhost tam_db >nul 2>&1
 
 cd /d "%~dp0codigos\proyectotam"
 
+:: Crear archivo .env si no existe para que Prisma y Next.js puedan conectarse
+if not exist ".env" (
+    echo DATABASE_URL="postgresql://userTAM@localhost:5432/tam_db?schema=public" > .env
+)
+
 :: 5. Instalar dependencias si falta node_modules (usando el npm portable)
 if not exist "node_modules" (
     echo [INFO] Instalando dependencias de Node.js - esto puede tardar unos minutos...
