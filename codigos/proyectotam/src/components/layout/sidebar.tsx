@@ -25,35 +25,35 @@ export function Sidebar() {
                 <h1 className="text-xl font-bold text-white tracking-wider">PROYECTO TAM</h1>
             </div>
 
-            <nav className="flex-1 space-y-2">
+            <nav className="flex-1 space-y-3">
                 <Link
                     href="/"
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${pathname === '/' ? 'bg-slate-900 text-white' : 'hover:bg-slate-900 hover:text-white'}`}
+                    className={`flex items-center gap-4 rounded-lg px-4 py-3 transition-colors text-base font-semibold ${pathname === '/' ? 'bg-slate-900 text-white' : 'hover:bg-slate-900 hover:text-white'}`}
                 >
-                    <LayoutDashboard className="h-5 w-5" />
-                    General Dashboard
+                    <LayoutDashboard className="h-6 w-6" />
+                    Dashboard General
                 </Link>
                 <Link
                     href="/planta"
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${pathname.startsWith('/planta') ? 'bg-slate-900 text-white' : 'hover:bg-slate-900 hover:text-white'}`}
+                    className={`flex items-center gap-4 rounded-lg px-4 py-3 transition-colors text-base font-semibold ${pathname.startsWith('/planta') ? 'bg-slate-900 text-white' : 'hover:bg-slate-900 hover:text-white'}`}
                 >
-                    <Wrench className="h-5 w-5" />
+                    <Wrench className="h-6 w-6" />
                     Línea de Producción
                 </Link>
                 <Link
                     href="/materiales"
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${pathname.startsWith('/materiales') ? 'bg-slate-900 text-white' : 'hover:bg-slate-900 hover:text-white'}`}
+                    className={`flex items-center gap-4 rounded-lg px-4 py-3 transition-colors text-base font-semibold ${pathname.startsWith('/materiales') ? 'bg-slate-900 text-white' : 'hover:bg-slate-900 hover:text-white'}`}
                 >
-                    <ClipboardList className="h-5 w-5" />
+                    <ClipboardList className="h-6 w-6" />
                     Control de Materiales
                 </Link>
 
                 {canSeeDeposit && (
                     <Link
                         href="/deposito"
-                        className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${pathname.startsWith('/deposito') ? 'bg-slate-900 text-white' : 'hover:bg-slate-900 hover:text-white'}`}
+                        className={`flex items-center gap-4 rounded-lg px-4 py-3 transition-colors text-base font-semibold ${pathname.startsWith('/deposito') ? 'bg-slate-900 text-white' : 'hover:bg-slate-900 hover:text-white'}`}
                     >
-                        <Package className="h-5 w-5" />
+                        <Package className="h-6 w-6" />
                         Depósito e Insumos
                     </Link>
                 )}
@@ -61,9 +61,9 @@ export function Sidebar() {
                 {isManager && (
                     <Link
                         href="/auditoria/usuarios"
-                        className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${pathname.startsWith('/auditoria') ? 'bg-slate-900 text-white' : 'hover:bg-slate-900 hover:text-white'}`}
+                        className={`flex items-center gap-4 rounded-lg px-4 py-3 transition-colors text-base font-semibold ${pathname.startsWith('/auditoria') ? 'bg-slate-900 text-white' : 'hover:bg-slate-900 hover:text-white'}`}
                     >
-                        <Users className="h-5 w-5" />
+                        <Users className="h-6 w-6" />
                         Roles y Usuarios
                     </Link>
                 )}
@@ -91,9 +91,9 @@ export function Sidebar() {
                 </button>
             </div>
 
-            <ChangePasswordModal 
-                isOpen={isChangePasswordOpen} 
-                onClose={() => setIsChangePasswordOpen(false)} 
+            <ChangePasswordModal
+                isOpen={isChangePasswordOpen}
+                onClose={() => setIsChangePasswordOpen(false)}
             />
         </div>
     )

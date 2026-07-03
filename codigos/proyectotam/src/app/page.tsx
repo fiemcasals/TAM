@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useAppStore } from "@/lib/store/app"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -8,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Activity, Archive, Wrench } from "lucide-react"
 
 export default function DashboardPage() {
+  const router = useRouter()
   const { vehicles, activities, checklistItems, vehicleChecklistItems, vehicleActivities } = useAppStore()
 
   const calculateProgress = (vehicleId: string, status: string) => {
@@ -94,15 +96,19 @@ export default function DashboardPage() {
             </TableHeader>
             <TableBody>
               {recentTanks.map((tank) => (
-                <TableRow key={tank.id}>
-                  <TableCell className="font-medium text-slate-900">{tank.ni}</TableCell>
-                  <TableCell>{tank.origen_unit}</TableCell>
+                <TableRow
+                  key={tank.id}
+                  className="cursor-pointer hover:bg-slate-50 transition-colors"
+                  onClick={() => router.push(`/planta/${tank.id}`)}
+                >
+                  <TableCell className="font-bold text-blue-600 hover:underline">{tank.ni}</TableCell>
+                  <TableCell className="font-medium text-slate-700">{tank.origen_unit}</TableCell>
                   <TableCell>
-                    {tank.status === 'in_plant' && <Badge variant="default" className="bg-amber-500 hover:bg-amber-600">En Planta</Badge>}
-                    {tank.status === 'in_service' && <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">En Servicio</Badge>}
-                    {tank.status === 'out_of_service' && <Badge variant="destructive">Fuera Servicio</Badge>}
+                    {tank.status === 'in_plant' && <Badge variant="default" className="bg-amber-500 hover:bg-amber-600 text-xs font-semibold px-2 py-0.5">En Planta</Badge>}
+                    {tank.status === 'in_service' && <Badge variant="default" className="bg-blue-500 hover:bg-blue-600 text-xs font-semibold px-2 py-0.5">En Servicio</Badge>}
+                    {tank.status === 'out_of_service' && <Badge variant="destructive" className="text-xs font-semibold px-2 py-0.5">Fuera Servicio</Badge>}
                   </TableCell>
-                  <TableCell>{new Date(tank.entry_date).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-slate-600">{new Date(tank.entry_date).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-24 bg-slate-100 rounded-full overflow-hidden">
@@ -111,7 +117,7 @@ export default function DashboardPage() {
                           style={{ width: `${calculateProgress(tank.id, tank.status)}%` }}
                         />
                       </div>
-                      <span className="text-xs text-slate-500 font-medium whitespace-nowrap">
+                      <span className="text-xs text-slate-500 font-bold whitespace-nowrap">
                         {calculateProgress(tank.id, tank.status)}%
                       </span>
                     </div>

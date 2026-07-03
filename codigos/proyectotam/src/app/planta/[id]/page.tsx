@@ -7,7 +7,7 @@ import { useAuthStore } from "@/lib/store/auth"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Clock, Box, Plus, Trash2, Maximize2, Minimize2, Pencil } from "lucide-react"
+import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Clock, Box, Plus, Trash2, Maximize2, Minimize2, Pencil, Users } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import type { Activity } from "@/types"
 
@@ -44,8 +44,54 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
     const getOperatorName = (operatorId?: string) => {
         if (!operatorId) return "Operario Desconocido"
         const user = users.find(u => u.id === operatorId)
-        if (!user) return `Operario #${operatorId.substring(0, 4)}`
+        if (!user) {
+            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(operatorId)
+            return isUuid ? `Operario #${operatorId.substring(0, 4)}` : operatorId
+        }
         return `${user.name} ${user.lastName || ""}`.trim()
+    }
+
+    const formatDuration = (start?: string | Date | null, end?: string | Date | null) => {
+        if (!start) return "N/A"
+        const startTime = new Date(start).getTime()
+        const endTime = end ? new Date(end).getTime() : Date.now()
+        const diffMs = endTime - startTime
+        if (diffMs < 0) return "0 min"
+
+        const diffMins = Math.floor(diffMs / (1000 * 60))
+        if (diffMins < 60) return `${diffMins} min`
+
+        const diffHours = Math.floor(diffMins / 60)
+        const remainingMins = diffMins % 60
+        if (diffHours < 24) {
+            return `${diffHours}h ${remainingMins}m`
+        }
+
+        const diffDays = Math.floor(diffHours / 24)
+        const remainingHours = diffHours % 24
+        return `${diffDays}d ${remainingHours}h ${remainingMins}m`
+    }
+
+    const getParticipantsForActivity = (vActId: string) => {
+        const participants = new Set<string>()
+
+        // Operators from checklists
+        const chkItems = vehicleChecklistItems.filter(vci => vci.vehicle_activity_id === vActId && vci.is_completed)
+        chkItems.forEach(item => {
+            if (item.operator_id) {
+                participants.add(getOperatorName(item.operator_id))
+            }
+        })
+
+        // Operators from material consumption
+        const consumptions = activityMaterialConsumptions.filter(c => c.vehicle_activity_id === vActId)
+        consumptions.forEach(c => {
+            if (c.operator_id) {
+                participants.add(getOperatorName(c.operator_id))
+            }
+        })
+
+        return Array.from(participants)
     }
 
     // UI State
@@ -59,7 +105,7 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
     const [selectedSerialNumber, setSelectedSerialNumber] = useState<string>("")
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     const [isModalExpanded, setIsModalExpanded] = useState(false)
-    
+
     // Inline editing consumption state
     const [editingConsumptionId, setEditingConsumptionId] = useState<string | null>(null)
     const [editingQuantity, setEditingQuantity] = useState<number>(0)
@@ -293,138 +339,226 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                             )}
                                         </div>
                                     </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                                        {/* Left Side: Tasks and Materials (2 columns) */}
+                                        <div className="md:col-span-2 space-y-6">
+                                            {/* Checklist Items */}
+                                            <div className="space-y-3">
+                                                <div className="text-sm font-semibold text-slate-700 mb-1">Tareas del Checklist</div>
+                                                {checks.map(check => {
+                                                    const vciLog = vehicleChecklistItems.find(vci => vci.checklist_id === check.id && vci.vehicle_activity_id === vAct.id)
+                                                    const isChecked = !!vciLog?.is_completed
+                                                    const isDisabled = !isOperator || vAct.status === 'completed' || vAct.status === 'pending_review'
 
-                                    {/* Checklist Items */}
-                                    <div className="space-y-3">
-                                        {checks.map(check => {
-                                            const vciLog = vehicleChecklistItems.find(vci => vci.checklist_id === check.id && vci.vehicle_activity_id === vAct.id)
-                                            const isChecked = !!vciLog?.is_completed
-
-                                            return (
-                                                <div key={check.id} className="flex items-start gap-3 p-2 hover:bg-slate-50 rounded-lg group transition-colors">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isChecked}
-                                                        disabled={!isOperator || vAct.status === 'completed' || vAct.status === 'pending_review'}
-                                                        onChange={() => {
-                                                            if (vAct.status === 'pending') updateActivityStatus(vAct.id, 'in_progress', currentUser!.name)
-                                                            handleToggleChecklist(vAct.id, activity.id, check.id)
-                                                        }}
-                                                        className="mt-1 h-5 w-5 rounded border-slate-300 text-amber-600 focus:ring-amber-600 disabled:opacity-50 cursor-pointer"
-                                                    />
-                                                    <div className="flex-1">
-                                                        <p className={`text-sm font-medium ${isChecked ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
-                                                            {check.description}
-                                                        </p>
-                                                        {isChecked && vciLog && (
-                                                            <div className="flex items-center gap-1 mt-1 text-xs text-slate-500">
-                                                                <Clock className="h-3 w-3" />
-                                                                Realizado por <span className="font-semibold">{getOperatorName(vciLog.operator_id)}</span> el {new Date(vciLog.completed_at!).toLocaleString()}
+                                                    return (
+                                                        <label
+                                                            htmlFor={check.id}
+                                                            key={check.id}
+                                                            className={`flex items-start gap-4 p-3 hover:bg-slate-50 rounded-lg group transition-colors select-none border border-slate-100 ${isDisabled ? 'cursor-default' : 'cursor-pointer'}`}
+                                                        >
+                                                            <input
+                                                                id={check.id}
+                                                                type="checkbox"
+                                                                checked={isChecked}
+                                                                disabled={isDisabled}
+                                                                onChange={() => {
+                                                                    if (vAct.status === 'pending') updateActivityStatus(vAct.id, 'in_progress', currentUser!.name)
+                                                                    handleToggleChecklist(vAct.id, activity.id, check.id)
+                                                                }}
+                                                                className="mt-0.5 h-8 w-8 rounded border-slate-300 text-amber-600 focus:ring-amber-600 disabled:opacity-50 cursor-pointer animate-in fade-in"
+                                                            />
+                                                            <div className="flex-1">
+                                                                <p className={`text-base font-semibold ${isChecked ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+                                                                    {check.description}
+                                                                </p>
+                                                                {isChecked && vciLog && (
+                                                                    <div className="flex items-center gap-1.5 mt-1.5 text-xs text-slate-500">
+                                                                        <Clock className="h-3.5 w-3.5" />
+                                                                        Realizado por <span className="font-bold text-slate-700">{getOperatorName(vciLog.operator_id)}</span> el {new Date(vciLog.completed_at!).toLocaleString()}
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
-                                        {checks.length === 0 && (
-                                            <p className="text-sm text-slate-500 italic">No hay tareas definidas para esta actividad.</p>
-                                        )}
-                                    </div>
+                                                        </label>
+                                                    )
+                                                })}
+                                                {checks.length === 0 && (
+                                                    <p className="text-sm text-slate-500 italic">No hay tareas definidas para esta actividad.</p>
+                                                )}
+                                            </div>
 
-                                    {/* Material Consumptions Listing */}
-                                    {activityMaterialConsumptions.filter(c => c.vehicle_activity_id === vAct.id).length > 0 && (
-                                        <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
-                                            <div className="text-sm font-medium text-slate-500 mb-2">Insumos Utilizados en Actividad</div>
-                                            {activityMaterialConsumptions.filter(c => c.vehicle_activity_id === vAct.id).map(cons => {
-                                                const batch = supplyBatches.find(b => b.id === cons.supply_batch_id)
-                                                const supply = supplies.find(s => s.id === batch?.supply_id)
-                                                return (
-                                                    <div key={cons.id} className="flex justify-between items-center bg-slate-50 p-2 rounded text-sm border border-slate-100">
-                                                        <div className="flex flex-col flex-1">
-                                                            <span className="font-semibold text-slate-700">{supply?.name || 'Insumo'} <span className="text-slate-500 font-normal">({supply?.family})</span></span>
-                                                            {editingConsumptionId === cons.id ? (
-                                                                <div className="flex items-center gap-2 mt-1">
-                                                                    <span className="text-xs text-slate-500">Cantidad:</span>
-                                                                    <Input
-                                                                        type="number"
-                                                                        value={editingQuantity}
-                                                                        onChange={e => setEditingQuantity(parseInt(e.target.value) || 0)}
-                                                                        className="w-20 h-7 text-xs px-2 py-0 bg-white"
-                                                                        min={1}
-                                                                        max={cons.quantity_used + (batch?.available_quantity || 0)}
-                                                                    />
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={async () => {
-                                                                            if (editingQuantity === cons.quantity_used) {
-                                                                                setEditingConsumptionId(null);
-                                                                                return;
-                                                                            }
-                                                                            const res = await updateMaterialConsumption(cons.id, editingQuantity);
-                                                                            if (res.success) {
-                                                                                setEditingConsumptionId(null);
-                                                                            } else {
-                                                                                alert(res.message);
-                                                                            }
-                                                                        }}
-                                                                        className="text-green-600 hover:text-green-800 text-xs font-bold px-2 py-1 hover:bg-green-100 rounded transition-colors"
-                                                                    >
-                                                                        Guardar
-                                                                    </button>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setEditingConsumptionId(null)}
-                                                                        className="text-slate-500 hover:text-slate-700 text-xs font-bold px-2 py-1 hover:bg-slate-200 rounded transition-colors"
-                                                                    >
-                                                                        Cancelar
-                                                                    </button>
+                                            {/* Material Consumptions Listing */}
+                                            {activityMaterialConsumptions.filter(c => c.vehicle_activity_id === vAct.id).length > 0 && (
+                                                <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
+                                                    <div className="text-sm font-semibold text-slate-700 mb-2">Insumos Utilizados en Actividad</div>
+                                                    {activityMaterialConsumptions.filter(c => c.vehicle_activity_id === vAct.id).map(cons => {
+                                                        const batch = supplyBatches.find(b => b.id === cons.supply_batch_id)
+                                                        const supply = supplies.find(s => s.id === batch?.supply_id)
+                                                        return (
+                                                            <div key={cons.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg text-sm border border-slate-150">
+                                                                <div className="flex flex-col flex-1">
+                                                                    <span className="font-bold text-slate-800 text-base">{supply?.name || 'Insumo'} <span className="text-slate-500 text-xs font-normal">({supply?.family})</span></span>
+                                                                    {editingConsumptionId === cons.id ? (
+                                                                        <div className="flex items-center gap-2 mt-1">
+                                                                            <span className="text-xs text-slate-500">Cantidad:</span>
+                                                                            <Input
+                                                                                type="number"
+                                                                                value={editingQuantity}
+                                                                                onChange={e => setEditingQuantity(parseInt(e.target.value) || 0)}
+                                                                                className="w-20 h-7 text-xs px-2 py-0 bg-white"
+                                                                                min={1}
+                                                                                max={cons.quantity_used + (batch?.available_quantity || 0)}
+                                                                            />
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={async () => {
+                                                                                    if (editingQuantity === cons.quantity_used) {
+                                                                                        setEditingConsumptionId(null);
+                                                                                        return;
+                                                                                    }
+                                                                                    const res = await updateMaterialConsumption(cons.id, editingQuantity);
+                                                                                    if (res.success) {
+                                                                                        setEditingConsumptionId(null);
+                                                                                    } else {
+                                                                                        alert(res.message);
+                                                                                    }
+                                                                                }}
+                                                                                className="text-green-600 hover:text-green-800 text-xs font-bold px-2 py-1 hover:bg-green-100 rounded transition-colors"
+                                                                            >
+                                                                                Guardar
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => setEditingConsumptionId(null)}
+                                                                                className="text-slate-500 hover:text-slate-700 text-xs font-bold px-2 py-1 hover:bg-slate-200 rounded transition-colors"
+                                                                            >
+                                                                                Cancelar
+                                                                            </button>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="text-xs text-slate-500 font-medium">
+                                                                            Cantidad: {cons.quantity_used} | Lote: {batch?.batch_number || 'N/A'} {cons.serial_number ? `| S/N: ${cons.serial_number}` : ''}
+                                                                        </span>
+                                                                    )}
+                                                                    <span className="text-xs text-slate-400 mt-0.5">Por <strong className="text-slate-600">{getOperatorName(cons.operator_id)}</strong> el {new Date(cons.timestamp).toLocaleString()}</span>
                                                                 </div>
-                                                            ) : (
-                                                                <span className="text-xs text-slate-500">
-                                                                    Cantidad: {cons.quantity_used} | Lote: {batch?.batch_number || 'N/A'} {cons.serial_number ? `| S/N: ${cons.serial_number}` : ''}
-                                                                </span>
-                                                            )}
-                                                            <span className="text-xs text-slate-400">Por {getOperatorName(cons.operator_id)} el {new Date(cons.timestamp).toLocaleString()}</span>
+                                                                {isOperator && vAct.status !== 'completed' && vAct.status !== 'pending_review' && (
+                                                                    <div className="flex items-center gap-1">
+                                                                        {!cons.serial_number && editingConsumptionId !== cons.id && (
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-10 w-10"
+                                                                                onClick={() => {
+                                                                                    setEditingConsumptionId(cons.id);
+                                                                                    setEditingQuantity(cons.quantity_used);
+                                                                                }}
+                                                                                title="Editar cantidad"
+                                                                            >
+                                                                                <Pencil className="h-5 w-5" />
+                                                                            </Button>
+                                                                        )}
+                                                                        {editingConsumptionId !== cons.id && (
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                className="text-red-500 hover:text-red-700 hover:bg-red-50 h-10 w-10"
+                                                                                onClick={async () => {
+                                                                                    if (confirm('¿Desea eliminar este consumo y devolver el stock al depósito?')) {
+                                                                                        await removeMaterialConsumption(cons.id, currentUser!.name)
+                                                                                        alert(`El consumo del material "${supply?.name || 'Insumo'}" ha sido eliminado y el stock devuelto al depósito.`)
+                                                                                    }
+                                                                                }}
+                                                                                title="Eliminar insumo"
+                                                                            >
+                                                                                <Trash2 className="h-5 w-5" />
+                                                                            </Button>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Right Side: Trazabilidad, Tiempos y Participantes */}
+                                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4 h-fit text-sm">
+                                            <div className="font-bold text-slate-800 border-b border-slate-200 pb-2 flex items-center gap-1.5">
+                                                <Clock className="h-4 w-4 text-amber-600" />
+                                                Tiempos e Historial
+                                            </div>
+                                            <div className="space-y-2.5">
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">Inicio:</span>
+                                                    <span className="font-medium text-slate-800 text-right">
+                                                        {vAct.started_at ? new Date(vAct.started_at).toLocaleString() : "No iniciada"}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">Fin Trabajos:</span>
+                                                    <span className="font-medium text-slate-800 text-right">
+                                                        {vAct.completed_at ? new Date(vAct.completed_at).toLocaleString() : (vAct.started_at ? "En progreso" : "—")}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">Aprobación:</span>
+                                                    <span className="font-medium text-slate-800 text-right">
+                                                        {vAct.verified_at ? new Date(vAct.verified_at).toLocaleString() : (vAct.completed_at ? "Esperando aprobación" : "—")}
+                                                    </span>
+                                                </div>
+
+                                                {vAct.started_at && (
+                                                    <div className="pt-2 border-t border-slate-200/60 space-y-1.5">
+                                                        <div className="flex justify-between text-xs">
+                                                            <span className="text-slate-500">Duración Trabajo:</span>
+                                                            <span className="font-bold text-slate-800">
+                                                                {formatDuration(vAct.started_at, vAct.completed_at)}
+                                                            </span>
                                                         </div>
-                                                        {isOperator && vAct.status !== 'completed' && vAct.status !== 'pending_review' && (
-                                                            <div className="flex items-center gap-1">
-                                                                {!cons.serial_number && editingConsumptionId !== cons.id && (
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 w-8"
-                                                                        onClick={() => {
-                                                                            setEditingConsumptionId(cons.id);
-                                                                            setEditingQuantity(cons.quantity_used);
-                                                                        }}
-                                                                        title="Editar cantidad"
-                                                                    >
-                                                                        <Pencil className="h-4 w-4" />
-                                                                    </Button>
-                                                                )}
-                                                                {editingConsumptionId !== cons.id && (
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8"
-                                                                        onClick={async () => {
-                                                                            if (confirm('¿Desea eliminar este consumo y devolver el stock al depósito?')) {
-                                                                                await removeMaterialConsumption(cons.id, currentUser!.name)
-                                                                                alert(`El consumo del material "${supply?.name || 'Insumo'}" ha sido eliminado y el stock devuelto al depósito.`)
-                                                                            }
-                                                                        }}
-                                                                        title="Eliminar insumo"
-                                                                    >
-                                                                        <Trash2 className="h-4 w-4" />
-                                                                    </Button>
-                                                                )}
+                                                        {vAct.completed_at && vAct.verified_at && (
+                                                            <div className="flex justify-between text-xs">
+                                                                <span className="text-slate-500">Espera Aprobación:</span>
+                                                                <span className="font-bold text-amber-700">
+                                                                    {formatDuration(vAct.completed_at, vAct.verified_at)}
+                                                                </span>
                                                             </div>
                                                         )}
                                                     </div>
-                                                )
-                                            })}
+                                                )}
+                                            </div>
+
+                                            <div className="font-bold text-slate-800 border-b border-slate-200 pb-2 pt-2 flex items-center gap-1.5">
+                                                <Users className="h-4 w-4 text-blue-600" />
+                                                Participantes
+                                            </div>
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <span className="text-xs font-semibold text-slate-400 block mb-1">OPERARIOS INVOLUCRADOS</span>
+                                                    {getParticipantsForActivity(vAct.id).length > 0 ? (
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {getParticipantsForActivity(vAct.id).map(name => (
+                                                                <Badge key={name} variant="secondary" className="bg-slate-200/80 hover:bg-slate-200 text-slate-800 font-medium px-2 py-0.5 text-xs">
+                                                                    {name}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-slate-500 italic">Ningún operario registrado</span>
+                                                    )}
+                                                </div>
+
+                                                {vAct.supervisor_id && (
+                                                    <div className="pt-1.5 border-t border-slate-100">
+                                                        <span className="text-xs font-semibold text-slate-400 block mb-1">SUPERVISOR DE ETAPA</span>
+                                                        <Badge className="bg-green-50 text-green-700 border border-green-200 font-medium px-2 py-0.5 text-xs">
+                                                            {vAct.supervisor_id}
+                                                        </Badge>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             )}
                         </Card>
@@ -451,7 +585,7 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                 )}
                             </button>
                         </div>
-                        
+
                         <form onSubmit={handleConsumeSubmit} className="p-6 flex flex-col h-full overflow-hidden space-y-4">
                             <div className="bg-blue-50 text-blue-800 text-xs p-3 rounded border border-blue-100">
                                 Busque el insumo que va a consumir. El sistema verificará el stock inmediatamente y descontará la cantidad seleccionada.
@@ -463,52 +597,52 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                         <label className="text-sm font-semibold text-slate-700">Seleccionar Material</label>
 
                                         {!selectedBatchId ? (
-                                             <div className="space-y-2 relative">
-                                                 <div className="relative">
-                                                     <Input
-                                                         placeholder="Buscar por nombre, categoría, lote o N° de serie..."
-                                                         value={searchQuery}
-                                                         onChange={(e) => {
-                                                             setSearchQuery(e.target.value);
-                                                             setIsDropdownOpen(true);
-                                                         }}
-                                                         onFocus={() => setIsDropdownOpen(true)}
-                                                         className="pr-10"
-                                                         autoFocus
-                                                     />
-                                                     <button
-                                                         type="button"
-                                                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                                         className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 focus:outline-none"
-                                                     >
-                                                         <ChevronDown className="h-5 w-5" />
-                                                     </button>
-                                                 </div>
-                                                 {isDropdownOpen && (
-                                                     <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto w-full border border-slate-200 rounded-md bg-white shadow-lg">
-                                                         {filteredBatches.length > 0 ? (
-                                                             filteredBatches.map(b => (
-                                                                 <div
-                                                                     key={b.id}
-                                                                     className="p-3 border-b border-slate-100 last:border-0 hover:bg-blue-50 cursor-pointer text-sm transition-colors"
-                                                                     onClick={() => {
-                                                                         setSelectedBatchId(b.id);
-                                                                         setIsDropdownOpen(false);
-                                                                     }}
-                                                                 >
-                                                                     <div className="font-semibold text-slate-900">{b.supplyName} <span className="text-slate-500 font-normal">({b.supplyFamily})</span></div>
-                                                                     <div className="text-xs text-slate-600 flex justify-between mt-1">
-                                                                         <span>Disp: <strong className="text-blue-700">{b.available_quantity} uds</strong></span>
-                                                                         <span>{b.batch_number ? `Lote: ${b.batch_number}` : ''} {b.serial_numbers?.length ? `| Varias Series` : ''}</span>
-                                                                     </div>
-                                                                 </div>
-                                                             ))
-                                                         ) : (
-                                                             <div className="p-4 text-center text-slate-500 text-sm">No se encontraron materiales en stock.</div>
-                                                         )}
-                                                     </div>
-                                                 )}
-                                             </div>
+                                            <div className="space-y-2 relative">
+                                                <div className="relative">
+                                                    <Input
+                                                        placeholder="Buscar por nombre, categoría, lote o N° de serie..."
+                                                        value={searchQuery}
+                                                        onChange={(e) => {
+                                                            setSearchQuery(e.target.value);
+                                                            setIsDropdownOpen(true);
+                                                        }}
+                                                        onFocus={() => setIsDropdownOpen(true)}
+                                                        className="pr-10"
+                                                        autoFocus
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 focus:outline-none"
+                                                    >
+                                                        <ChevronDown className="h-5 w-5" />
+                                                    </button>
+                                                </div>
+                                                {isDropdownOpen && (
+                                                    <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto w-full border border-slate-200 rounded-md bg-white shadow-lg">
+                                                        {filteredBatches.length > 0 ? (
+                                                            filteredBatches.map(b => (
+                                                                <div
+                                                                    key={b.id}
+                                                                    className="p-3 border-b border-slate-100 last:border-0 hover:bg-blue-50 cursor-pointer text-sm transition-colors"
+                                                                    onClick={() => {
+                                                                        setSelectedBatchId(b.id);
+                                                                        setIsDropdownOpen(false);
+                                                                    }}
+                                                                >
+                                                                    <div className="font-semibold text-slate-900">{b.supplyName} <span className="text-slate-500 font-normal">({b.supplyFamily})</span></div>
+                                                                    <div className="text-xs text-slate-600 flex justify-between mt-1">
+                                                                        <span>Disp: <strong className="text-blue-700">{b.available_quantity} uds</strong></span>
+                                                                        <span>{b.batch_number ? `Lote: ${b.batch_number}` : ''} {b.serial_numbers?.length ? `| Varias Series` : ''}</span>
+                                                                    </div>
+                                                                </div>
+                                                            ))
+                                                        ) : (
+                                                            <div className="p-4 text-center text-slate-500 text-sm">No se encontraron materiales en stock.</div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
                                         ) : (
                                             <div className="space-y-3">
                                                 <div className="flex items-center justify-between p-3 border border-green-200 bg-green-50 rounded-lg">
@@ -561,7 +695,7 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                         ) : (
                                             <div className="space-y-4">
                                                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Configuración de Consumo</h3>
-                                                
+
                                                 {/* If it has serial numbers, show a secondary dropdown to pick exactly which one */}
                                                 {selectedBatch?.serial_numbers && selectedBatch.serial_numbers.length > 0 ? (
                                                     <div className="space-y-2">

@@ -177,7 +177,10 @@ export async function toggleChecklistItemAction(vehicleActivityId: string, check
       if (vAct && vAct.status === 'pending') {
         await prisma.vehicleActivity.update({
           where: { id: vehicleActivityId },
-          data: { status: 'in_progress' }
+          data: { 
+            status: 'in_progress',
+            started_at: new Date()
+          }
         })
       }
     }
@@ -205,16 +208,46 @@ export async function updateActivityStatusAction(vehicleActivityId: string, stat
       }
     }
 
+    const vAct = await prisma.vehicleActivity.findUnique({ where: { id: vehicleActivityId } })
+    if (!vAct) {
+      return { success: false, message: "Actividad no encontrada." }
+    }
+
+    const updateData: any = { status }
+
+    if (status === 'in_progress') {
+      if (!vAct.started_at) {
+        updateData.started_at = new Date()
+      }
+      updateData.completed_at = null
+    } else if (status === 'pending_review') {
+      if (!vAct.started_at) {
+        updateData.started_at = vAct.started_at || new Date()
+      }
+      updateData.completed_at = new Date()
+    } else if (status === 'completed') {
+      if (!vAct.started_at) {
+        updateData.started_at = vAct.started_at || new Date()
+      }
+      if (!vAct.completed_at) {
+        updateData.completed_at = vAct.completed_at || new Date()
+      }
+      updateData.verified_at = new Date()
+      updateData.supervisor_id = userId
+    } else if (status === 'pending') {
+      updateData.started_at = null
+      updateData.completed_at = null
+      updateData.verified_at = null
+      updateData.supervisor_id = null
+    }
+
     await prisma.vehicleActivity.update({
       where: { id: vehicleActivityId },
-      data: {
-        status,
-        supervisor_id: status === 'completed' ? userId : undefined,
-        verified_at: status === 'completed' ? new Date() : undefined
-      }
+      data: updateData
     })
     return { success: true }
   } catch (error) {
+     console.error(error)
      return { success: false }
   }
 }
