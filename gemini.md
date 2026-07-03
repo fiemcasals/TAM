@@ -1,0 +1,1 @@
+Quiero que cuando me propones un comandos me detalles que hace el comando y brevemente la sintaxis del comando, antes de darmelo para aceptar. es decir quieroun poco mas de detalle sobre lo que estoy autorizando a que ejecutes y por que
