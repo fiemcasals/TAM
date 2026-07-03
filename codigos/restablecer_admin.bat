@@ -5,6 +5,12 @@ echo       INICIANDO PROGRAMA DE RECUPERACION
 echo ===================================================
 echo.
 
+:: Crear archivo .env si no existe a partir del template
+if not exist "%~dp0proyectotam\.env" (
+    echo [INFO] No se encontro el archivo .env. Creandolo a partir de .env.example...
+    copy "%~dp0proyectotam\.env.example" "%~dp0proyectotam\.env" >nul
+)
+
 :: Verificar si python está instalado
 python --version >nul 2>&1
 if %errorlevel% neq 0 (

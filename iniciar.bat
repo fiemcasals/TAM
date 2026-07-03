@@ -60,6 +60,12 @@ createdb.exe -U userTAM -h localhost tam_db >nul 2>&1
 
 cd /d "%~dp0codigos\proyectotam"
 
+:: 4.5. Crear archivo .env si no existe a partir del template
+if not exist ".env" (
+    echo [INFO] No se encontro el archivo .env. Creandolo a partir de .env.example...
+    copy .env.example .env >nul
+)
+
 :: 5. Instalar dependencias si falta node_modules (usando el npm portable)
 if not exist "node_modules" (
     echo [INFO] Instalando dependencias de Node.js - esto puede tardar unos minutos...

@@ -48,8 +48,9 @@ Si prefieres ejecutar el entorno paso a paso usando la terminal de Windows en la
    ```cmd
    cd codigos\proyectotam
    ```
-4. Si es la primera vez, instala las dependencias locales en el disco:
+4. Si es la primera vez, crea el archivo de variables de entorno copiándolo desde la plantilla y luego instala las dependencias locales en el disco:
    ```cmd
+   copy .env.example .env
    npm install
    ```
 5. Sincroniza la estructura de datos:

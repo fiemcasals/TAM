@@ -9,3 +9,5 @@ codigos/portable/
 **/build/
 **/*.tsbuildinfo
 **/.env*
+!**/.env.example
+
