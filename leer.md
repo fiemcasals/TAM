@@ -117,12 +117,15 @@ La aplicación implementa un Control de Acceso Basado en Roles (RBAC):
 
 ### 🔑 Primer Acceso e Inicialización (Configuración)
 
-Para la puesta en marcha inicial en una instalación limpia, la base de datos se inicializa con un único usuario administrador temporal:
-* **Usuario (Email):** `manager@manager.com`
-* **Contraseña temporal:** `manager123`
+Para la puesta en marcha inicial en una instalación limpia, la base de datos se inicializa con los siguientes usuarios de prueba para cada rol:
+
+* **Jefe de Proyecto:** `manager@manager.com` (Clave: `manager123`)
+* **Supervisor:** `supervisor@sup.com` (Clave: `supervisor123`)
+* **Encargado de Depósito:** `deposit@dep.com` (Clave: `deposit123`)
+* **Operarios:** `operator1@op.com`, `operator2@op.com`, `operator3@op.com`, `operator@op.com` (Clave para todos: `operator123`)
 
 > [!CAUTION]
-> **Acción Requerida:** Tras iniciar sesión por primera vez con esta cuenta de administración temporal, dirígete a la sección de **Gestión de Usuarios** (`/auditoria/usuarios`) para dar de alta las cuentas reales de tu equipo de trabajo y, posteriormente, desactiva o modifica la contraseña de este usuario temporal para evitar accesos no autorizados.
+> **Acción Requerida:** Tras iniciar sesión por primera vez, dirígete a la sección de **Gestión de Usuarios** (`/auditoria/usuarios`) para dar de alta las cuentas reales de tu equipo de trabajo y, posteriormente, desactiva o modifica la contraseña de estos usuarios de prueba para evitar accesos no autorizados en un entorno de producción real.
 
 ### Cómo Crear Nuevos Usuarios (Desde la Interfaz)
 1. Inicia sesión como **Project Manager** (con la cuenta de configuración inicial).

@@ -1,5 +1,6 @@
-export type Role = 'deposit_manager' | 'operator' | 'supervisor' | 'project_manager'
-export type VehicleStatus = 'out_of_service' | 'in_plant' | 'in_service'
+export type Role = 'deposit_manager' | 'operator' | 'supervisor' | 'project_manager' | 'admin' | 'ammo_manager'
+export type VehicleStatus = 'in_army' | 'in_deposit' | 'in_plant' | 'in_service'
+export type ArmyStatus = 'uninspected' | 'selected' | 'discarded'
 export type ActivityStatus = 'pending' | 'in_progress' | 'pending_review' | 'completed'
 
 export interface User {
@@ -18,7 +19,9 @@ export interface Vehicle {
     ni: string // Numero de Identificacion
     origen_unit: string
     status: VehicleStatus
+    army_status?: ArmyStatus
     entry_date: string
+    assigned_operators?: string[]
 }
 
 export interface Activity {
@@ -57,6 +60,7 @@ export interface VehicleActivity {
     status: ActivityStatus
     operator_id?: string
     supervisor_id?: string
+    rejection_reason?: string
     started_at?: string
     completed_at?: string
     verified_at?: string
@@ -67,6 +71,7 @@ export interface VehicleChecklistItem {
     vehicle_activity_id: string
     checklist_id: string
     is_completed: boolean
+    started_at?: string
     completed_at?: string
     operator_id?: string
 }
@@ -90,4 +95,32 @@ export interface AuditLog {
     old_value?: string
     new_value?: string
     timestamp: string
+}
+
+export interface Ammunition {
+    id: string
+    type: string
+    caliber?: string
+    description?: string
+    batches?: AmmunitionBatch[]
+}
+
+export interface AmmunitionBatch {
+    id: string
+    ammunition_id: string
+    batch_number?: string
+    available_quantity: number
+    entry_date: string
+    ammunition?: Ammunition
+}
+
+export interface VehicleAmmunitionAssignment {
+    id: string
+    vehicle_id: string
+    ammunition_batch_id: string
+    quantity: number
+    operator_id: string
+    assigned_at: string
+    batch?: AmmunitionBatch
+    vehicle?: Vehicle
 }

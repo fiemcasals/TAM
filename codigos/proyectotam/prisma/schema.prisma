@@ -11,7 +11,7 @@ model User {
   id        String   @id @default(uuid())
   name      String
   lastName  String?
-  role      String   // deposit_manager, operator, supervisor, project_manager
+  role      String   // deposit_manager, operator, supervisor, project_manager, ammo_manager
   email     String   @unique
   password  String   // Will be hashed
   status    String   @default("active") // active, inactive
@@ -22,10 +22,13 @@ model Vehicle {
   id          String   @id @default(uuid())
   ni          String   @unique
   origen_unit String
-  status      String   @default("out_of_service") // out_of_service, in_plant, in_service
+  status      String   @default("in_army") // in_army, in_deposit, in_plant, in_service
+  army_status String   @default("uninspected") // uninspected, selected, discarded
   entry_date  DateTime @default(now())
+  assigned_operators String[] @default([])
 
   activities  VehicleActivity[]
+  ammunition  VehicleAmmunitionAssignment[]
 }
 
 model Activity {
@@ -74,6 +77,7 @@ model VehicleActivity {
   status        String   @default("pending") // pending, in_progress, pending_review, completed
   operator_id   String?
   supervisor_id String?
+  rejection_reason String?
   started_at    DateTime?
   completed_at  DateTime?
   verified_at   DateTime?
@@ -90,6 +94,7 @@ model VehicleChecklistItem {
   vehicle_activity_id String
   checklist_id        String
   is_completed        Boolean  @default(false)
+  started_at          DateTime?
   completed_at        DateTime?
   operator_id         String?
 
@@ -119,4 +124,36 @@ model AuditLog {
   old_value   String?
   new_value   String?
   timestamp   DateTime @default(now())
+}
+
+model Ammunition {
+  id          String   @id @default(uuid())
+  type        String
+  caliber     String?
+  description String?
+
+  batches     AmmunitionBatch[]
+}
+
+model AmmunitionBatch {
+  id                 String   @id @default(uuid())
+  ammunition_id      String
+  batch_number       String?
+  available_quantity Int      @default(0)
+  entry_date         DateTime @default(now())
+  
+  ammunition         Ammunition @relation(fields: [ammunition_id], references: [id], onDelete: Cascade)
+  assignments        VehicleAmmunitionAssignment[]
+}
+
+model VehicleAmmunitionAssignment {
+  id                  String   @id @default(uuid())
+  vehicle_id          String
+  ammunition_batch_id String
+  quantity            Int
+  operator_id         String
+  assigned_at         DateTime @default(now())
+  
+  vehicle             Vehicle  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
+  batch               AmmunitionBatch @relation(fields: [ammunition_batch_id], references: [id], onDelete: Cascade)
 }

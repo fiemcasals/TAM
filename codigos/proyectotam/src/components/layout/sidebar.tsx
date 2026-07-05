@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAuthStore } from "@/lib/store/auth"
-import { LayoutDashboard, Wrench, Package, ShieldCheck, Users, LogOut, KeyRound, ClipboardList } from "lucide-react"
+import { LayoutDashboard, Wrench, Package, ShieldCheck, Users, LogOut, KeyRound, ClipboardList, Target, Shield, Settings } from "lucide-react"
 import { ChangePasswordModal } from "@/components/auth/ChangePasswordModal"
 
 export function Sidebar() {
@@ -14,9 +14,9 @@ export function Sidebar() {
 
     if (pathname === '/login') return null
 
-    // Define role-based navigation logic
     const isManager = currentUser?.role === 'project_manager'
     const canSeeDeposit = currentUser?.role === 'project_manager' || currentUser?.role === 'deposit_manager'
+    const canSeeAmmo = currentUser?.role === 'project_manager' || currentUser?.role === 'ammo_manager' || currentUser?.role === 'admin'
 
     return (
         <div className="flex bg-slate-950 text-slate-300 w-64 flex-col min-h-screen p-4 border-r border-slate-800">
@@ -40,6 +40,16 @@ export function Sidebar() {
                     <Wrench className="h-5 w-5" />
                     Línea de Producción
                 </Link>
+
+                {isManager && (
+                    <Link
+                        href="/flota"
+                        className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${pathname.startsWith('/flota') ? 'bg-slate-900 text-white' : 'hover:bg-slate-900 hover:text-white'}`}
+                    >
+                        <Shield className="h-5 w-5" />
+                        Flota en Ejército
+                    </Link>
+                )}
                 <Link
                     href="/materiales"
                     className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${pathname.startsWith('/materiales') ? 'bg-slate-900 text-white' : 'hover:bg-slate-900 hover:text-white'}`}
@@ -58,14 +68,33 @@ export function Sidebar() {
                     </Link>
                 )}
 
-                {isManager && (
+                {canSeeAmmo && (
                     <Link
-                        href="/auditoria/usuarios"
-                        className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${pathname.startsWith('/auditoria') ? 'bg-slate-900 text-white' : 'hover:bg-slate-900 hover:text-white'}`}
+                        href="/municion"
+                        className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${pathname.startsWith('/municion') ? 'bg-slate-900 text-white' : 'hover:bg-slate-900 hover:text-white'}`}
                     >
-                        <Users className="h-5 w-5" />
-                        Roles y Usuarios
+                        <Target className="h-5 w-5" />
+                        Gestión de Munición
                     </Link>
+                )}
+
+                {isManager && (
+                    <>
+                        <Link
+                            href="/auditoria/usuarios"
+                            className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${pathname.startsWith('/auditoria') ? 'bg-slate-900 text-white' : 'hover:bg-slate-900 hover:text-white'}`}
+                        >
+                            <Users className="h-5 w-5" />
+                            Roles y Usuarios
+                        </Link>
+                        <Link
+                            href="/configuracion"
+                            className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${pathname.startsWith('/configuracion') ? 'bg-slate-900 text-white' : 'hover:bg-slate-900 hover:text-white'}`}
+                        >
+                            <Settings className="h-5 w-5" />
+                            Configuración Dinámica
+                        </Link>
+                    </>
                 )}
             </nav>
 

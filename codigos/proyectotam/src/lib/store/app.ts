@@ -25,6 +25,7 @@ interface AppState {
     updateVehicleStatus: (id: string, status: string) => Promise<void>
     updateVehicle: (id: string, data: Partial<Vehicle>) => Promise<void>
     deleteVehicle: (id: string) => Promise<void>
+    assignOperatorsToVehicle: (id: string, operatorIds: string[]) => Promise<void>
 
     // Stock Actions
     addSupply: (name: string, description: string, family?: string) => Promise<string | null>
@@ -37,11 +38,11 @@ interface AppState {
 
     // Planta Actions
     initVehicleActivities: (vehicleId: string) => Promise<void>
-    toggleChecklistItem: (vehicleId: string, activityId: string, checklistId: string, operatorId: string) => Promise<void>
+    toggleChecklistItem: (vehicleId: string, activityId: string, checklistId: string, operatorId: string, actionType: 'start' | 'complete' | 'reset') => Promise<void>
     consumeMaterialForActivity: (vehicleActivityId: string, batchId: string, quantity: number, operatorId: string, serialNumber?: string) => Promise<boolean>
     removeMaterialConsumption: (consumptionId: string, userId: string) => Promise<void>
     updateMaterialConsumption: (consumptionId: string, newQuantity: number) => Promise<{ success: boolean; message?: string }>
-    updateActivityStatus: (vehicleActivityId: string, status: ActivityStatus, userId: string) => Promise<void>
+    updateActivityStatus: (vehicleActivityId: string, status: ActivityStatus, userId: string, reason?: string) => Promise<void>
 }
 
 export const useAppStore = create<AppState>()((set, get) => ({
@@ -114,6 +115,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
         await get().fetchData()
     },
 
+    assignOperatorsToVehicle: async (id, operatorIds) => {
+        await updateVehicleAction(id, { assigned_operators: operatorIds })
+        await get().fetchData()
+    },
+
     addSupply: async (name, description, family) => {
         const res = await addSupplyAction(name, description, family)
         if (res.success && res.supply) {
@@ -153,13 +159,13 @@ export const useAppStore = create<AppState>()((set, get) => ({
         await get().fetchVehicleDetails(vehicleId)
     },
 
-    toggleChecklistItem: async (vehicleId, activityId, checklistId, operatorId) => {
+    toggleChecklistItem: async (vehicleId, activityId, checklistId, operatorId, actionType) => {
         const { vehicleActivities } = get()
         const vActivity = vehicleActivities.find(va => va.vehicle_id === vehicleId && va.activity_id === activityId)
         if (!vActivity) return
         
         // Optimistic UI could be added here, but for simplicity we rely on refetch
-        await toggleChecklistItemAction(vActivity.id, checklistId, operatorId)
+        await toggleChecklistItemAction(vActivity.id, checklistId, operatorId, actionType)
         await get().fetchVehicleDetails(vehicleId)
     },
 
@@ -205,8 +211,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
         return { success: false, message: res.message || "Error al actualizar la cantidad." }
     },
 
-    updateActivityStatus: async (vehicleActivityId, status, userId) => {
-        await updateActivityStatusAction(vehicleActivityId, status, userId)
+    updateActivityStatus: async (vehicleActivityId, status, userId, reason) => {
+        await updateActivityStatusAction(vehicleActivityId, status, userId, reason)
         const vAct = get().vehicleActivities.find(va => va.id === vehicleActivityId)
         if (vAct) await get().fetchVehicleDetails(vAct.vehicle_id)
     }

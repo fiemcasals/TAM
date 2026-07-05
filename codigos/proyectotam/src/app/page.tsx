@@ -5,14 +5,14 @@ import { useAppStore } from "@/lib/store/app"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Activity, Archive, Wrench } from "lucide-react"
+import { Activity, Archive, Wrench, Shield } from "lucide-react"
 
 export default function DashboardPage() {
   const { vehicles, activities, checklistItems, vehicleChecklistItems, vehicleActivities } = useAppStore()
 
   const calculateProgress = (vehicleId: string, status: string) => {
     if (status === 'in_service') return 100
-    if (status === 'out_of_service') return 0
+    if (status === 'in_deposit') return 0
     if (!activities.length || !checklistItems.length) return 0
 
     const actualTotalChecklists = checklistItems.length
@@ -29,7 +29,8 @@ export default function DashboardPage() {
   const tankStats = {
     in_service: vehicles.filter(v => v.status === 'in_service').length,
     in_plant: vehicles.filter(v => v.status === 'in_plant').length,
-    out_of_service: vehicles.filter(v => v.status === 'out_of_service').length,
+    in_deposit: vehicles.filter(v => v.status === 'in_deposit').length,
+    in_army: vehicles.filter(v => v.status === 'in_army').length,
   }
 
   // Get the 5 most recently added/updated vehicles
@@ -42,17 +43,19 @@ export default function DashboardPage() {
         <p className="text-slate-500 mt-2">Métricas principales de producción y estado de la flota TAM.</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="hover:border-blue-500 transition-colors cursor-pointer bg-blue-50/50">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-blue-700">En Servicio</CardTitle>
-            <Activity className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-900">{tankStats.in_service}</div>
-            <p className="text-xs text-blue-600 mt-1">Unidades operativas</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-6 md:grid-cols-4">
+        <Link href="/servicio" className="block focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-xl">
+          <Card className="hover:border-blue-500 transition-colors cursor-pointer bg-blue-50/50 h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-blue-700">En Servicio</CardTitle>
+              <Activity className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-blue-900">{tankStats.in_service}</div>
+              <p className="text-xs text-blue-600 mt-1">Unidades operativas ➔</p>
+            </CardContent>
+          </Card>
+        </Link>
 
         <Link href="/planta" className="block focus:outline-none focus:ring-2 focus:ring-amber-500 rounded-xl">
           <Card className="hover:border-amber-500 transition-colors cursor-pointer bg-amber-50/50 shadow-sm border-amber-200">
@@ -69,14 +72,27 @@ export default function DashboardPage() {
 
         <Card className="hover:border-red-500 transition-colors cursor-pointer bg-red-50/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-red-700">Fuera de Servicio</CardTitle>
+            <CardTitle className="text-sm font-medium text-red-700">En Depósito</CardTitle>
             <Archive className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-900">{tankStats.out_of_service}</div>
+            <div className="text-3xl font-bold text-red-900">{tankStats.in_deposit}</div>
             <p className="text-xs text-red-600 mt-1">A la espera de ingreso</p>
           </CardContent>
         </Card>
+
+        <Link href="/flota" className="block focus:outline-none focus:ring-2 focus:ring-green-500 rounded-xl">
+          <Card className="hover:border-green-500 transition-colors cursor-pointer bg-green-50/50">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-green-700">En Ejército</CardTitle>
+              <Shield className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-900">{tankStats.in_army}</div>
+              <p className="text-xs text-green-600 mt-1">Previo a modernización ➔</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       <div className="space-y-4">
@@ -100,7 +116,8 @@ export default function DashboardPage() {
                   <TableCell>
                     {tank.status === 'in_plant' && <Badge variant="default" className="bg-amber-500 hover:bg-amber-600">En Planta</Badge>}
                     {tank.status === 'in_service' && <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">En Servicio</Badge>}
-                    {tank.status === 'out_of_service' && <Badge variant="destructive">Fuera Servicio</Badge>}
+                    {tank.status === 'in_deposit' && <Badge variant="destructive">En Depósito</Badge>}
+                    {tank.status === 'in_army' && <Badge variant="default" className="bg-green-500 hover:bg-green-600">En Ejército</Badge>}
                   </TableCell>
                   <TableCell>{new Date(tank.entry_date).toLocaleDateString()}</TableCell>
                   <TableCell>
