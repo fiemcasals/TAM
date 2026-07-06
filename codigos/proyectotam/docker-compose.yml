@@ -1,10 +1,8 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:15-alpine
     container_name: tam_db
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -18,14 +16,23 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: tam_app
-    restart: always
-    ports:
-      - "3000:3000"
+    container_name: tam
+    restart: unless-stopped
+    networks:
+      - default
+      - net-proxy
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+      - SESSION_SECRET=${SESSION_SECRET}
     depends_on:
       - db
+    # Para debug local sin nginx, descomentar y elegir puerto libre:
+    # ports:
+    #   - "3000:3000"
 
 volumes:
   pgdata:
+
+networks:
+  net-proxy:
+    external: true

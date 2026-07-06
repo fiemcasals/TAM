@@ -9,6 +9,9 @@ async function main() {
   // Borrar en orden inverso de dependencias para evitar errores de claves foráneas
   console.log('Limpiando tablas existentes...')
   await prisma.auditLog.deleteMany()
+  await prisma.vehicleAmmunitionAssignment.deleteMany()
+  await prisma.ammunitionBatch.deleteMany()
+  await prisma.ammunition.deleteMany()
   await prisma.activityMaterialConsumption.deleteMany()
   await prisma.vehicleChecklistItem.deleteMany()
   await prisma.vehicleActivity.deleteMany()
@@ -42,6 +45,13 @@ async function main() {
       email: 'deposit@dep.com',
       password: 'deposit123',
       role: 'deposit_manager',
+    },
+    {
+      name: 'Encargado',
+      lastName: 'Municion',
+      email: 'municion@mun.com',
+      password: 'municion123',
+      role: 'ammo_manager',
     },
     {
       name: 'Juan',
@@ -147,8 +157,9 @@ async function main() {
   const v1 = await prisma.vehicle.create({ data: { ni: 'TAM-2C-101', origen_unit: 'RC Tan 8 (Magdalena)', status: 'in_plant' } })
   const v2 = await prisma.vehicle.create({ data: { ni: 'TAM-2C-102', origen_unit: 'RC Tan 10 (Azul)', status: 'in_plant' } })
   const v3 = await prisma.vehicle.create({ data: { ni: 'TAM-2C-103', origen_unit: 'RC Tan 2 (Olavarría)', status: 'in_plant' } })
-  const v4 = await prisma.vehicle.create({ data: { ni: 'TAM-2C-104', origen_unit: 'RC Tan 1 (Villaguay)', status: 'out_of_service' } })
+  const v4 = await prisma.vehicle.create({ data: { ni: 'TAM-2C-104', origen_unit: 'RC Tan 1 (Villaguay)', status: 'in_deposit' } })
   const v5 = await prisma.vehicle.create({ data: { ni: 'TAM-2C-105', origen_unit: 'RC Tan 6 (Concordia)', status: 'in_service' } })
+  await prisma.vehicle.create({ data: { ni: 'TAM-2C-206', origen_unit: 'RC Tan 4 (Zapala)', status: 'in_army', army_status: 'uninspected' } })
 
   const vehicles = [v1, v2, v3, v4, v5]
 
@@ -348,6 +359,13 @@ async function main() {
       }
     })
   }
+
+  // 10. Cargar Munición (Stock inicial para el módulo de Munición)
+  console.log('Cargando catálogo y stock de munición...')
+  const ammo1 = await prisma.ammunition.create({ data: { type: 'Proyectil 105mm HE', caliber: '105mm', description: 'Proyectil de alto explosivo para cañón L7' } })
+  const ammo2 = await prisma.ammunition.create({ data: { type: 'Munición 7.62mm', caliber: '7.62mm', description: 'Munición para ametralladora coaxial' } })
+  await prisma.ammunitionBatch.create({ data: { ammunition_id: ammo1.id, batch_number: 'LOTE-105-2026', available_quantity: 40 } })
+  await prisma.ammunitionBatch.create({ data: { ammunition_id: ammo2.id, batch_number: 'LOTE-762-2026', available_quantity: 2000 } })
 
   console.log('Carga de base de datos terminada con éxito.')
 }
