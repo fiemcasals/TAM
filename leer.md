@@ -63,6 +63,48 @@ Si prefieres ejecutar el entorno paso a paso usando la terminal de Windows en la
    ```
 7. Abre **[http://localhost:3000](http://localhost:3000)** en tu navegador.
 
+### Opción 3: Despliegue en Linux (Recomendado para entornos no Windows)
+Si te encuentras en un entorno Linux (como Ubuntu o Debian), puedes utilizar Docker Compose o Node.js de forma nativa.
+
+**Con Docker Compose (Opción más fácil):**
+1. Abre una terminal y navega a la carpeta del proyecto:
+   ```bash
+   cd TAM/codigos/proyectotam
+   ```
+2. Crea un archivo `.env` en esa misma carpeta con las variables necesarias, por ejemplo:
+   ```bash
+   POSTGRES_USER=userTAM
+   POSTGRES_PASSWORD=passwordTAM
+   POSTGRES_DB=tam_db
+   ```
+3. Levanta los servicios con Docker Compose en segundo plano:
+   ```bash
+   docker compose up -d
+   ```
+4. Aplica las migraciones de la base de datos de Prisma y carga los datos semilla (ejecutando dentro del contenedor de la app):
+   ```bash
+   docker exec -it tam_app npx prisma db push
+   docker exec -it tam_app npm run prisma db seed
+   ```
+5. Abre **[http://localhost:3000](http://localhost:3000)** en tu navegador web.
+
+**Con Node.js de forma nativa:**
+1. Navega a la carpeta del proyecto:
+   ```bash
+   cd TAM/codigos/proyectotam
+   ```
+2. Instala las dependencias:
+   ```bash
+   npm install
+   ```
+3. Configura un servicio local de PostgreSQL (o levántalo con Docker) y configura la variable `DATABASE_URL` en tu entorno (ej. en el archivo `.env`).
+4. Sincroniza la base de datos e inicia el servidor en modo desarrollo:
+   ```bash
+   npx prisma db push
+   npm run dev
+   ```
+5. Accede a **[http://localhost:3000](http://localhost:3000)**.
+
 ---
 
 ## 👥 Roles del Sistema y Acceso Inicial
@@ -76,12 +118,15 @@ La aplicación implementa un Control de Acceso Basado en Roles (RBAC):
 
 ### 🔑 Primer Acceso e Inicialización (Configuración)
 
-Para la puesta en marcha inicial en una instalación limpia, la base de datos se inicializa con un único usuario administrador temporal:
-* **Usuario (Email):** `manager@manager.com`
-* **Contraseña temporal:** `manager123`
+Para la puesta en marcha inicial en una instalación limpia, la base de datos se inicializa con los siguientes usuarios de prueba para cada rol:
+
+* **Jefe de Proyecto:** `manager@manager.com` (Clave: `manager123`)
+* **Supervisor:** `supervisor@sup.com` (Clave: `supervisor123`)
+* **Encargado de Depósito:** `deposit@dep.com` (Clave: `deposit123`)
+* **Operarios:** `operator1@op.com`, `operator2@op.com`, `operator3@op.com`, `operator@op.com` (Clave para todos: `operator123`)
 
 > [!CAUTION]
-> **Acción Requerida:** Tras iniciar sesión por primera vez con esta cuenta de administración temporal, dirígete a la sección de **Gestión de Usuarios** (`/auditoria/usuarios`) para dar de alta las cuentas reales de tu equipo de trabajo y, posteriormente, desactiva o modifica la contraseña de este usuario temporal para evitar accesos no autorizados.
+> **Acción Requerida:** Tras iniciar sesión por primera vez, dirígete a la sección de **Gestión de Usuarios** (`/auditoria/usuarios`) para dar de alta las cuentas reales de tu equipo de trabajo y, posteriormente, desactiva o modifica la contraseña de estos usuarios de prueba para evitar accesos no autorizados en un entorno de producción real.
 
 ### Cómo Crear Nuevos Usuarios (Desde la Interfaz)
 1. Inicia sesión como **Project Manager** (con la cuenta de configuración inicial).

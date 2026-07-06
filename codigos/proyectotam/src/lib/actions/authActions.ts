@@ -52,8 +52,8 @@ export async function logoutUser() {
 export async function getUsers() {
   try {
     const session = await getSession()
-    if (!session || session.role !== 'project_manager') {
-      return { success: false, users: [], message: "No autorizado. Se requieren permisos de Project Manager." }
+    if (!session || (session.role !== 'project_manager' && session.role !== 'supervisor')) {
+      return { success: false, users: [], message: "No autorizado." }
     }
 
     const users = await prisma.user.findMany({

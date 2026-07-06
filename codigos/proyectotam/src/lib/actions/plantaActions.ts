@@ -21,7 +21,7 @@ export async function getVehicles() {
   return { success: true, vehicles, vehicleActivities, vehicleChecklistItems }
 }
 
-export async function addVehicle(data: { ni: string, origen_unit: string, status: string }) {
+export async function addVehicle(data: { ni: string, origen_unit: string, status: string, army_status?: string }) {
   try {
     const session = await getSession()
     if (!session || session.role !== 'project_manager') {
@@ -32,7 +32,8 @@ export async function addVehicle(data: { ni: string, origen_unit: string, status
       data: {
         ni: data.ni,
         origen_unit: data.origen_unit,
-        status: data.status
+        status: data.status,
+        army_status: data.army_status || 'uninspected'
       }
     })
     
@@ -72,11 +73,11 @@ export async function updateVehicleStatus(id: string, status: string) {
   }
 }
 
-export async function updateVehicle(id: string, data: { ni: string, origen_unit: string, status: string }) {
+export async function updateVehicle(id: string, data: { ni: string, origen_unit: string, status: string, assigned_operators?: string[], army_status?: string }) {
   try {
     const session = await getSession()
-    if (!session || session.role !== 'project_manager') {
-      return { success: false, message: "No autorizado. Se requieren permisos de Project Manager." }
+    if (!session || (session.role !== 'project_manager' && session.role !== 'supervisor')) {
+      return { success: false, message: "No autorizado. Se requieren permisos de Project Manager o Supervisor." }
     }
 
     const updated = await prisma.vehicle.update({
@@ -84,7 +85,9 @@ export async function updateVehicle(id: string, data: { ni: string, origen_unit:
       data: {
         ni: data.ni,
         origen_unit: data.origen_unit,
-        status: data.status
+        status: data.status,
+        assigned_operators: data.assigned_operators,
+        army_status: data.army_status
       }
     })
     return { success: true, vehicle: updated }
@@ -146,7 +149,7 @@ export async function getCatalogData() {
   }
 }
 
-export async function toggleChecklistItemAction(vehicleActivityId: string, checklistId: string, operatorId: string) {
+export async function toggleChecklistItemAction(vehicleActivityId: string, checklistId: string, operatorId: string, actionType: 'start' | 'complete' | 'reset') {
   try {
     const session = await getSession()
     if (!session || (session.role !== 'operator' && session.role !== 'project_manager')) {
@@ -157,31 +160,35 @@ export async function toggleChecklistItemAction(vehicleActivityId: string, check
       where: { vehicle_activity_id: vehicleActivityId, checklist_id: checklistId }
     })
 
-    if (existing) {
-      // Toggle off -> Delete
-      await prisma.vehicleChecklistItem.delete({ where: { id: existing.id } })
-    } else {
-      // Toggle on -> Create
-      await prisma.vehicleChecklistItem.create({
-        data: {
-          vehicle_activity_id: vehicleActivityId,
-          checklist_id: checklistId,
-          is_completed: true,
-          completed_at: new Date(),
-          operator_id: operatorId
-        }
-      })
-
-      // Auto-transition to in_progress if currently pending
-      const vAct = await prisma.vehicleActivity.findUnique({ where: { id: vehicleActivityId } })
-      if (vAct && vAct.status === 'pending') {
-        await prisma.vehicleActivity.update({
-          where: { id: vehicleActivityId },
-          data: { 
-            status: 'in_progress',
-            started_at: new Date()
+    if (actionType === 'reset') {
+      if (existing) await prisma.vehicleChecklistItem.delete({ where: { id: existing.id } })
+    } else if (actionType === 'complete') {
+      if (existing) {
+        await prisma.vehicleChecklistItem.update({
+          where: { id: existing.id },
+          data: { is_completed: true, completed_at: new Date() }
+        })
+      }
+    } else if (actionType === 'start') {
+      if (!existing) {
+        await prisma.vehicleChecklistItem.create({
+          data: {
+            vehicle_activity_id: vehicleActivityId,
+            checklist_id: checklistId,
+            is_completed: false,
+            started_at: new Date(),
+            operator_id: operatorId
           }
         })
+
+        // Auto-transition to in_progress if currently pending
+        const vAct = await prisma.vehicleActivity.findUnique({ where: { id: vehicleActivityId } })
+        if (vAct && vAct.status === 'pending') {
+          await prisma.vehicleActivity.update({
+            where: { id: vehicleActivityId },
+            data: { status: 'in_progress', started_at: new Date() }
+          })
+        }
       }
     }
     return { success: true }
@@ -191,7 +198,7 @@ export async function toggleChecklistItemAction(vehicleActivityId: string, check
   }
 }
 
-export async function updateActivityStatusAction(vehicleActivityId: string, status: string, userId: string) {
+export async function updateActivityStatusAction(vehicleActivityId: string, status: string, userId: string, reason?: string) {
   try {
     const session = await getSession()
     if (!session) {
@@ -220,11 +227,15 @@ export async function updateActivityStatusAction(vehicleActivityId: string, stat
         updateData.started_at = new Date()
       }
       updateData.completed_at = null
+      if (reason) {
+        updateData.rejection_reason = reason
+      }
     } else if (status === 'pending_review') {
       if (!vAct.started_at) {
         updateData.started_at = vAct.started_at || new Date()
       }
       updateData.completed_at = new Date()
+      updateData.rejection_reason = null
     } else if (status === 'completed') {
       if (!vAct.started_at) {
         updateData.started_at = vAct.started_at || new Date()
@@ -239,6 +250,7 @@ export async function updateActivityStatusAction(vehicleActivityId: string, stat
       updateData.completed_at = null
       updateData.verified_at = null
       updateData.supervisor_id = null
+      updateData.rejection_reason = null
     }
 
     await prisma.vehicleActivity.update({

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useAppStore } from "@/lib/store/app"
+import { useAuthStore } from "@/lib/store/auth"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
@@ -12,9 +13,18 @@ import { Button } from "@/components/ui/button"
 
 export default function PlantaPage() {
     const { vehicles, activities, checklistItems, vehicleChecklistItems, vehicleActivities } = useAppStore()
+    const currentUser = useAuthStore(state => state.currentUser)
+    const canWorkOnVehicles = currentUser?.role === 'operator' || currentUser?.role === 'supervisor' || currentUser?.role === 'project_manager'
+    
+    const isOperator = currentUser?.role === 'operator'
     const [searchTerm, setSearchTerm] = useState("")
     const tanksInPlant = vehicles
         .filter(v => v.status === 'in_plant')
+        .filter(v => {
+            if (!isOperator) return true
+            if (!v.assigned_operators || v.assigned_operators.length === 0) return true
+            return v.assigned_operators.includes(currentUser.id)
+        })
         .filter(v =>
             v.ni.toLowerCase().includes(searchTerm.toLowerCase()) ||
             v.origen_unit.toLowerCase().includes(searchTerm.toLowerCase())
@@ -96,9 +106,11 @@ export default function PlantaPage() {
                                             <Link href={`/planta/${tank.id}`}>
                                                 <Button size="sm" variant="outline" className="text-slate-600">Ver Detalles</Button>
                                             </Link>
-                                            <Link href={`/planta/${tank.id}?mode=work`}>
-                                                <Button size="sm" className="bg-amber-600 hover:bg-amber-700 shadow-sm">Trabajar</Button>
-                                            </Link>
+                                            {canWorkOnVehicles && (
+                                                <Link href={`/planta/${tank.id}?mode=work`}>
+                                                    <Button size="sm" className="bg-amber-600 hover:bg-amber-700 shadow-sm">Trabajar</Button>
+                                                </Link>
+                                            )}
                                         </div>
                                     </TableCell>
                                 </TableRow>
