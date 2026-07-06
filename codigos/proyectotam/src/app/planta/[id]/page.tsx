@@ -616,7 +616,7 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                                                                 </Badge>
                                                                             ))}
                                                                         </div>
-                                                                        {isWorkMode && addingTaskParticipantFor !== vciLog.id && (
+                                                                        {isOperator && addingTaskParticipantFor !== vciLog.id && (
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={() => { setAddingTaskParticipantFor(vciLog.id); setNewTaskParticipantId("") }}
@@ -816,7 +816,7 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                                 <div>
                                                     <div className="flex items-center justify-between mb-1">
                                                         <span className="text-xs font-semibold text-slate-400">OPERARIOS INVOLUCRADOS</span>
-                                                        {isWorkMode && addingParticipantFor !== vAct.id && (
+                                                        {isOperator && addingParticipantFor !== vAct.id && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => { setAddingParticipantFor(vAct.id); setNewParticipantId("") }}

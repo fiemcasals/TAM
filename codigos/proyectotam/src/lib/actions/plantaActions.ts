@@ -300,8 +300,8 @@ export async function toggleChecklistItemAction(vehicleActivityId: string, check
 export async function addChecklistItemParticipantAction(vehicleChecklistItemId: string, operatorId: string) {
   try {
     const session = await getSession()
-    if (!session) {
-      return { success: false, message: "No autenticado." }
+    if (!session || (session.role !== 'operator' && session.role !== 'project_manager')) {
+      return { success: false, message: "No autorizado. Solo el operario o el Project Manager pueden agregar participantes." }
     }
 
     const vci = await prisma.vehicleChecklistItem.findUnique({ where: { id: vehicleChecklistItemId } })
@@ -327,8 +327,8 @@ export async function addChecklistItemParticipantAction(vehicleChecklistItemId: 
 export async function addActivityParticipantAction(vehicleActivityId: string, operatorId: string) {
   try {
     const session = await getSession()
-    if (!session) {
-      return { success: false, message: "No autenticado." }
+    if (!session || (session.role !== 'operator' && session.role !== 'project_manager')) {
+      return { success: false, message: "No autorizado. Solo el operario o el Project Manager pueden agregar participantes." }
     }
 
     const vAct = await prisma.vehicleActivity.findUnique({ where: { id: vehicleActivityId } })
