@@ -5,6 +5,7 @@ import { getVehicles, updateVehicle } from "@/lib/actions/plantaActions"
 import { useAuthStore } from "@/lib/store/auth"
 import { Shield, Search, MessageSquareText } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ObservationsModal } from "@/components/vehicles/ObservationsModal"
 import type { Vehicle, ArmyStatus } from "@/types"
@@ -100,7 +101,7 @@ export default function FlotaPage() {
                                     <th className="px-6 py-3">Unidad de Origen</th>
                                     <th className="px-6 py-3">Estado Actual</th>
                                     <th className="px-6 py-3">Observaciones</th>
-                                    <th className="px-6 py-3 text-right">Estado / Pase a Depósito</th>
+                                    <th className="px-6 py-3 text-right">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y">
@@ -133,16 +134,15 @@ export default function FlotaPage() {
                                             </button>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <select
-                                                value="in_army"
+                                            <Button
+                                                size="sm"
                                                 disabled={v.army_status !== 'selected'}
-                                                onChange={(e) => { if (e.target.value === 'in_deposit') handleSendToDeposito(v.id) }}
-                                                className={`h-9 rounded-md text-xs px-2 font-medium border shadow-sm transition-colors focus:ring-2 focus:outline-none bg-slate-50 text-slate-900 border-slate-200 focus:ring-slate-500 ${v.army_status !== 'selected' ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                                title={v.army_status !== 'selected' ? 'Debe estar Seleccionado para pasar a Depósito' : 'Cambiar estado'}
+                                                onClick={() => handleSendToDeposito(v.id)}
+                                                className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400"
+                                                title={v.army_status !== 'selected' ? 'Debe estar Seleccionado para pasar a Depósito' : 'Enviar a Depósito'}
                                             >
-                                                <option value="in_army">En Ejército</option>
-                                                <option value="in_deposit">Enviar a Depósito</option>
-                                            </select>
+                                                Enviar a Depósito
+                                            </Button>
                                         </td>
                                     </tr>
                                 ))}
