@@ -1,7 +1,9 @@
 "use server"
 
-import { prisma } from "../prisma"
+import { PrismaClient } from '@prisma/client'
 import { getSession } from "./authActions"
+
+const prisma = new PrismaClient()
 
 export async function addActivity(name: string, suggested_order: number) {
   try {

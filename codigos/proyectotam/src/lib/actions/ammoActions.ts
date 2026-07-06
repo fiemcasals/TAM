@@ -1,7 +1,9 @@
 "use server"
 
-import { prisma } from "../prisma"
+import { PrismaClient } from '@prisma/client'
 import { getSession } from "./authActions"
+
+const prisma = new PrismaClient()
 
 export async function getAmmunition() {
   try {
@@ -106,8 +108,8 @@ export async function assignAmmunition(vehicleId: string, batchId: string, quant
       }
 
       const vehicle = await tx.vehicle.findUnique({ where: { id: vehicleId } })
-      if (!vehicle || vehicle.status !== 'in_service') {
-         throw new Error("El vehículo debe estar En Servicio para recibir munición")
+      if (!vehicle || vehicle.status !== 'in_plant') {
+         throw new Error("El vehículo debe estar En planta para recibir munición")
       }
 
       await tx.ammunitionBatch.update({
