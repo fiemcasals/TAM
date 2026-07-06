@@ -8,31 +8,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Package, Plus, Search, Truck, Trash2, Layers, List, Edit2, ArrowUpDown } from "lucide-react"
-import type { VehicleStatus, Vehicle, SupplyBatch } from "@/types"
+import { Package, Plus, Search, Trash2, Layers, List, Edit2, ArrowUpDown } from "lucide-react"
+import type { SupplyBatch } from "@/types"
 
 export default function DepositoPage() {
     const {
-        vehicles, supplies, supplyBatches,
-        addVehicle, updateVehicleStatus, updateVehicle,
+        supplies, supplyBatches,
         updateSupply, updateBatch, deleteBatch
     } = useAppStore()
 
     const currentUser = useAuthStore(state => state.currentUser)
     const canManageDeposit = currentUser?.role === 'deposit_manager' || currentUser?.role === 'project_manager'
-    const isProjectManager = currentUser?.role === 'project_manager'
-    const canChangeVehicleStatus = currentUser?.role === 'project_manager' || currentUser?.role === 'supervisor'
-
-    // Tabs state
-    const [activeTab, setActiveTab] = useState<'vehicles' | 'inventory'>('vehicles')
 
     // Quick filtering
     const [searchTerm, setSearchTerm] = useState("")
-
-    // Modals Extracted States
-    const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false)
-    const [isVehicleEditModalOpen, setIsVehicleEditModalOpen] = useState(false)
-    const [vehicleToEdit, setVehicleToEdit] = useState<Vehicle | null>(null)
 
     const [isStockModalOpen, setIsStockModalOpen] = useState(false)
     const [stockQuantity, setStockQuantity] = useState(1) // For dynamic serial input generation
@@ -47,30 +36,6 @@ export default function DepositoPage() {
     const [inventorySortConfig, setInventorySortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null)
 
     // Handlers
-    const handleAddVehicle = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        const fd = new FormData(e.currentTarget)
-        addVehicle({
-            ni: (fd.get("ni") as string) || "S/N",
-            origen_unit: (fd.get("origen_unit") as string) || "Desconocida",
-            status: (fd.get("status") as VehicleStatus) || "in_deposit"
-        })
-        setIsVehicleModalOpen(false)
-    }
-
-    const handleEditVehicle = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        if (!vehicleToEdit) return
-        const fd = new FormData(e.currentTarget)
-        updateVehicle(vehicleToEdit.id, {
-            ni: fd.get("ni") as string,
-            origen_unit: fd.get("origen_unit") as string,
-            status: fd.get("status") as VehicleStatus
-        })
-        setIsVehicleEditModalOpen(false)
-        setVehicleToEdit(null)
-    }
-
     const handleAddStock = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         const fd = new FormData(e.currentTarget)
@@ -200,118 +165,12 @@ export default function DepositoPage() {
         <div className="p-8 max-w-7xl mx-auto space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-900">Gestión de Depósito</h1>
-                    <p className="text-slate-500 mt-2">Administración simple de la flota de tanques y el stock de insumos.</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-slate-900">Insumos en Depósito</h1>
+                    <p className="text-slate-500 mt-2">Administración del stock de insumos y materiales.</p>
                 </div>
             </div>
 
-            {/* Custom Tabs Navigation */}
-            <div className="flex space-x-2 border-b border-slate-200">
-                <button
-                    onClick={() => setActiveTab('vehicles')}
-                    className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'vehicles' ? 'border-amber-600 text-amber-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
-                >
-                    <Truck className="h-4 w-4" /> Flota TAM
-                </button>
-                <button
-                    onClick={() => setActiveTab('inventory')}
-                    className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'inventory' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
-                >
-                    <Package className="h-4 w-4" /> Insumos en Stock
-                </button>
-            </div>
-
-            {/* TAB VEHICLES */}
-            {activeTab === 'vehicles' && (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="flex justify-between items-center">
-                        <div className="relative w-64">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
-                            <Input
-                                type="text"
-                                placeholder="Buscar tanque..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-9 bg-white"
-                            />
-                        </div>
-                        {isProjectManager && (
-                            <Button onClick={() => setIsVehicleModalOpen(true)} className="bg-amber-600 hover:bg-amber-700">
-                                <Plus className="mr-2 h-4 w-4" /> Nuevo Tanque
-                            </Button>
-                        )}
-                    </div>
-
-                    <Card>
-                        <CardHeader className="pb-3 border-b border-slate-100">
-                            <CardTitle>Flota de Tanques</CardTitle>
-                            <CardDescription>Visualice y cambie el estado en tiempo real de cualquier unidad.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            <Table>
-                                <TableHeader className="bg-slate-50">
-                                    <TableRow>
-                                        <TableHead className="pl-6 w-[200px]">Identificación (NI)</TableHead>
-                                        <TableHead>Unidad de Origen</TableHead>
-                                        <TableHead>Estado Actual</TableHead>
-                                        <TableHead className="text-right pr-6">Acciones</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {vehicles
-                                        .filter(v =>
-                                            v.ni.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                            v.origen_unit.toLowerCase().includes(searchTerm.toLowerCase())
-                                        )
-                                        .sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime())
-                                        .map((vehicle) => (
-                                            <TableRow key={vehicle.id}>
-                                                <TableCell className="pl-6 font-bold text-slate-900">{vehicle.ni}</TableCell>
-                                                <TableCell className="text-slate-600">{vehicle.origen_unit}</TableCell>
-                                                <TableCell>
-                                                    <select
-                                                        disabled={!canChangeVehicleStatus}
-                                                        value={vehicle.status}
-                                                        onChange={(e) => updateVehicleStatus(vehicle.id, e.target.value as VehicleStatus)}
-                                                        className={`h-9 w-[200px] rounded-md text-sm px-3 font-medium border shadow-sm transition-colors focus:ring-2 focus:outline-none ${vehicle.status === 'in_plant' ? 'bg-amber-50 text-amber-900 border-amber-200 focus:ring-amber-500' :
-                                                            vehicle.status === 'in_service' ? 'bg-blue-50 text-blue-900 border-blue-200 focus:ring-blue-500' :
-                                                                'bg-slate-50 text-slate-900 border-slate-200 focus:ring-slate-500'
-                                                            } ${!canChangeVehicleStatus && 'opacity-70 cursor-not-allowed'}`}
-                                                    >
-                                                        <option value="in_deposit">En Depósito</option>
-                                                        <option value="in_plant">En Planta</option>
-                                                        <option value="in_service">En Servicio</option>
-                                                    </select>
-                                                </TableCell>
-                                                <TableCell className="text-right pr-6">
-                                                    {isProjectManager ? (
-                                                        <div className="flex items-center justify-end gap-1">
-                                                            <Button variant="ghost" size="icon" onClick={() => { setVehicleToEdit(vehicle); setIsVehicleEditModalOpen(true); }} className="text-slate-500 hover:bg-slate-100 hover:text-slate-700">
-                                                                <Edit2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </div>
-                                                    ) : <span className="text-xs text-slate-400">Solo Lectura</span>}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-
-                                    {vehicles.length === 0 && (
-                                        <TableRow>
-                                            <TableCell colSpan={4} className="h-32 text-center text-slate-500">
-                                                No hay vehículos registrados en el sistema.
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
-
-            {/* TAB INVENTORY (SIMPLE) */}
-            {activeTab === 'inventory' && (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="space-y-6">
                     <div className="flex justify-between items-center">
                         <div className="relative w-64">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
@@ -410,82 +269,8 @@ export default function DepositoPage() {
                         </CardContent>
                     </Card>
                 </div>
-            )}
 
             {/* MODALS SECTION */}
-
-            {/* 1. Modal Alta Vehiculo */}
-            {isVehicleModalOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md border border-slate-200 overflow-hidden">
-                        <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-slate-900">Crear Nuevo Tanque</h2>
-                        </div>
-                        <form onSubmit={handleAddVehicle} className="p-6 space-y-5">
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-slate-700">Número de Identificación (NI)</label>
-                                <Input name="ni" placeholder="Ej: 165" required autoFocus />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-slate-700">Unidad de Origen</label>
-                                <Input name="origen_unit" placeholder="Ej: RC Tan 8" required />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-slate-700">Estado Inicial del Tanque</label>
-                                <select
-                                    name="status"
-                                    className="flex h-11 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
-                                >
-                                    <option value="in_deposit">En Depósito</option>
-                                    <option value="in_plant">En Planta</option>
-                                    <option value="in_service">En Servicio</option>
-                                </select>
-                            </div>
-                            <div className="pt-4 flex justify-end gap-3">
-                                <Button type="button" variant="ghost" onClick={() => setIsVehicleModalOpen(false)}>Cancelar</Button>
-                                <Button type="submit" className="bg-amber-600 hover:bg-amber-700 font-semibold px-6">Guardar</Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* 1.b Modal Editar Vehiculo */}
-            {isVehicleEditModalOpen && vehicleToEdit && (
-                <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md border border-slate-200 overflow-hidden">
-                        <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-slate-900">Editar Tanque (NI: {vehicleToEdit.ni})</h2>
-                        </div>
-                        <form onSubmit={handleEditVehicle} className="p-6 space-y-5">
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-slate-700">Número de Identificación (NI)</label>
-                                <Input name="ni" defaultValue={vehicleToEdit.ni} required />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-slate-700">Unidad de Origen</label>
-                                <Input name="origen_unit" defaultValue={vehicleToEdit.origen_unit} required />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-slate-700">Estado del Tanque</label>
-                                <select
-                                    name="status"
-                                    defaultValue={vehicleToEdit.status}
-                                    className="flex h-11 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                                >
-                                    <option value="in_deposit">En Depósito</option>
-                                    <option value="in_plant">En Planta</option>
-                                    <option value="in_service">En Servicio</option>
-                                </select>
-                            </div>
-                            <div className="pt-4 flex justify-end gap-3">
-                                <Button type="button" variant="ghost" onClick={() => { setIsVehicleEditModalOpen(false); setVehicleToEdit(null); }}>Cancelar</Button>
-                                <Button type="submit" className="bg-blue-600 hover:bg-blue-700 font-semibold px-6">Actualizar</Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
 
             {/* 2. Modal Ingreso Stock Multi-Series */}
             {isStockModalOpen && (

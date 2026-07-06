@@ -5,7 +5,6 @@ import { getVehicles, updateVehicle } from "@/lib/actions/plantaActions"
 import { useAuthStore } from "@/lib/store/auth"
 import { Shield, Search, Pencil } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { Vehicle, ArmyStatus } from "@/types"
 
@@ -61,13 +60,12 @@ export default function FlotaPage() {
         }
     }
 
-    const handleSendToPlant = async (id: string) => {
-        if (!confirm("¿Desea ingresar este vehículo a la Planta de Modernización?")) return
+    const handleSendToDeposito = async (id: string) => {
+        if (!confirm("¿Desea pasar este vehículo a Depósito?")) return
         const v = vehicles.find(x => x.id === id)
         if (!v) return
         const res = await updateVehicle(id, { ni: v.ni, origen_unit: v.origen_unit, status: 'in_deposit' })
         if (res.success) {
-            alert("El vehículo ha sido enviado al depósito de la planta.")
             loadData()
         } else {
             alert(res.message)
@@ -113,7 +111,7 @@ export default function FlotaPage() {
                                     <th className="px-6 py-3">Unidad de Origen</th>
                                     <th className="px-6 py-3">Estado Actual</th>
                                     <th className="px-6 py-3">Detalles</th>
-                                    <th className="px-6 py-3 text-right">Acciones</th>
+                                    <th className="px-6 py-3 text-right">Estado / Pase a Depósito</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y">
@@ -152,16 +150,16 @@ export default function FlotaPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 border-blue-200"
-                                                onClick={() => handleSendToPlant(v.id)}
+                                            <select
+                                                value="in_army"
                                                 disabled={v.army_status !== 'selected'}
-                                                title={v.army_status !== 'selected' ? 'Debe estar Seleccionado para ingresar a planta' : 'Ingresar a Planta'}
+                                                onChange={(e) => { if (e.target.value === 'in_deposit') handleSendToDeposito(v.id) }}
+                                                className={`h-9 rounded-md text-xs px-2 font-medium border shadow-sm transition-colors focus:ring-2 focus:outline-none bg-slate-50 text-slate-900 border-slate-200 focus:ring-slate-500 ${v.army_status !== 'selected' ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                title={v.army_status !== 'selected' ? 'Debe estar Seleccionado para pasar a Depósito' : 'Cambiar estado'}
                                             >
-                                                Mover a Planta
-                                            </Button>
+                                                <option value="in_army">En Ejército</option>
+                                                <option value="in_deposit">Enviar a Depósito</option>
+                                            </select>
                                         </td>
                                     </tr>
                                 ))}

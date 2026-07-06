@@ -37,7 +37,8 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
         updateActivityStatus,
         assignOperatorsToVehicle,
         addActivityParticipant,
-        addChecklistItemParticipant
+        addChecklistItemParticipant,
+        updateVehicle
     } = useAppStore()
 
     const currentUser = useAuthStore(state => state.currentUser)
@@ -312,6 +313,12 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
     const isOperator = (currentUser?.role === 'operator' || currentUser?.role === 'project_manager') && isWorkMode
     const isSupervisor = (currentUser?.role === 'supervisor' || currentUser?.role === 'project_manager') && isWorkMode
 
+    const handleSendToService = async () => {
+        if (!confirm("¿Confirma que el tanque terminó la línea de modernización y pasa a Servicio?")) return
+        await updateVehicle(id, { status: 'in_service' })
+        router.push('/servicio')
+    }
+
     return (
         <div className="p-8 max-w-5xl mx-auto space-y-6">
             {/* Header section with back button and tank info */}
@@ -344,6 +351,18 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                         }}>
                             <Users className="h-4 w-4 mr-2" />
                             Asignar Operarios
+                        </Button>
+                    )}
+                    {isSupervisor && vehicle.status === 'in_plant' && (
+                        <Button
+                            size="sm"
+                            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-200 disabled:text-slate-400"
+                            disabled={calculateProgress() !== 100}
+                            title={calculateProgress() !== 100 ? 'Se habilita al llegar al 100% de las actividades' : 'Pasar el tanque a Servicio'}
+                            onClick={handleSendToService}
+                        >
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Pasar a Servicio
                         </Button>
                     )}
                 </div>
