@@ -364,7 +364,6 @@ export default function MaterialsPage() {
                                         <th className="py-3 px-4">Familia</th>
                                         <th className="py-3 px-4">Lote / Serie</th>
                                         <th className="py-3 px-4">Unidad Destino (Blindado)</th>
-                                        <th className="py-3 px-4">Etapa de Montaje</th>
                                         <th className="py-3 px-4 text-center">Cant. Usada</th>
                                         <th className="py-3 px-4">Instalado Por</th>
                                         <th className="py-3 px-4">Fecha Instalación</th>
@@ -407,16 +406,7 @@ export default function MaterialsPage() {
                                                         <span className="text-red-400 text-xs">Vehículo no encontrado</span>
                                                     )}
                                                 </td>
-                                                <td className="py-3 px-4">
-                                                    {activity ? (
-                                                        <span className="text-slate-300 text-xs flex items-center gap-1.5" title={activity.name}>
-                                                            <Activity className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-                                                            <span className="truncate max-w-[180px]">{activity.name}</span>
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-slate-500">-</span>
-                                                    )}
-                                                </td>
+
                                                 <td className="py-3 px-4 text-center font-bold text-white">
                                                     {consumption.quantity_used}
                                                 </td>

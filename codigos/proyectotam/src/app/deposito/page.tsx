@@ -53,7 +53,7 @@ export default function DepositoPage() {
         addVehicle({
             ni: (fd.get("ni") as string) || "S/N",
             origen_unit: (fd.get("origen_unit") as string) || "Desconocida",
-            status: (fd.get("status") as VehicleStatus) || "out_of_service"
+            status: (fd.get("status") as VehicleStatus) || "in_deposit"
         })
         setIsVehicleModalOpen(false)
     }
@@ -285,7 +285,7 @@ export default function DepositoPage() {
                                                                 'bg-slate-50 text-slate-900 border-slate-200 focus:ring-slate-500'
                                                             } ${!canChangeVehicleStatus && 'opacity-70 cursor-not-allowed'}`}
                                                     >
-                                                        <option value="out_of_service">Fuera de Servicio</option>
+                                                        <option value="in_deposit">En Depósito</option>
                                                         <option value="in_plant">En Planta</option>
                                                         <option value="in_service">En Servicio</option>
                                                     </select>
@@ -446,7 +446,7 @@ export default function DepositoPage() {
                                     name="status"
                                     className="flex h-11 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                                 >
-                                    <option value="out_of_service">Fuera de Servicio</option>
+                                    <option value="in_deposit">En Depósito</option>
                                     <option value="in_plant">En Planta</option>
                                     <option value="in_service">En Servicio</option>
                                 </select>
@@ -483,7 +483,7 @@ export default function DepositoPage() {
                                     defaultValue={vehicleToEdit.status}
                                     className="flex h-11 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                                 >
-                                    <option value="out_of_service">Fuera de Servicio</option>
+                                    <option value="in_deposit">En Depósito</option>
                                     <option value="in_plant">En Planta</option>
                                     <option value="in_service">En Servicio</option>
                                 </select>

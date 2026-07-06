@@ -118,7 +118,9 @@ export default function UsuariosPage() {
         project_manager: "Jefe Proyecto",
         supervisor: "Supervisor",
         deposit_manager: "Enc. Depósito",
-        operator: "Operario"
+        operator: "Operario",
+        admin: "Administrador",
+        ammo_manager: "Enc. Munición"
     }
 
     return (
@@ -286,6 +288,7 @@ export default function UsuariosPage() {
                                     <option value="operator">Operario (Línea)</option>
                                     <option value="supervisor">Supervisor (Auditoría Técnica)</option>
                                     <option value="deposit_manager">Encargado de Depósito</option>
+                                    <option value="ammo_manager">Encargado de Munición</option>
                                     <option value="project_manager">Jefe de Proyecto (Admin)</option>
                                 </select>
                             </div>

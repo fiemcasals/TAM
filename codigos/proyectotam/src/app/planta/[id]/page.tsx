@@ -34,7 +34,8 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
         consumeMaterialForActivity,
         removeMaterialConsumption,
         updateMaterialConsumption,
-        updateActivityStatus
+        updateActivityStatus,
+        assignOperatorsToVehicle
     } = useAppStore()
 
     const currentUser = useAuthStore(state => state.currentUser)
@@ -105,6 +106,9 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
     const [selectedSerialNumber, setSelectedSerialNumber] = useState<string>("")
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     const [isModalExpanded, setIsModalExpanded] = useState(false)
+    // Assign Operators state
+    const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
+    const [selectedOperators, setSelectedOperators] = useState<string[]>([])
 
     // Inline editing consumption state
     const [editingConsumptionId, setEditingConsumptionId] = useState<string | null>(null)
@@ -138,6 +142,14 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
     }, [vActivities.length, activities.length, id, initVehicleActivities])
 
     const vehicle = vehicles.find(v => v.id === id)
+
+    // Initialize selected operators state once vehicle is loaded
+    useEffect(() => {
+        if (vehicle && selectedOperators.length === 0 && !isAssignModalOpen) {
+            setSelectedOperators(vehicle.assigned_operators || [])
+        }
+    }, [vehicle, isAssignModalOpen, selectedOperators.length])
+
     if (!vehicle) {
         return <div className="p-8 text-center text-slate-500">Vehículo no encontrado</div>
     }
@@ -145,9 +157,9 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
     const getActivityDetails = (actId: string) => activities.find(a => a.id === actId)!
     const getChecklistsForActivity = (actId: string) => checklistItems.filter(c => c.activity_id === actId)
 
-    const handleToggleChecklist = (vActId: string, actId: string, checkId: string) => {
+    const handleToggleChecklist = (vActId: string, actId: string, checkId: string, actionType: 'start' | 'complete' | 'reset') => {
         if (!currentUser) return
-        toggleChecklistItem(id, actId, checkId, currentUser.name) // Using name as UI identifier for simplicity instead of UUID
+        toggleChecklistItem(id, actId, checkId, currentUser.name, actionType)
     }
 
     const handleConsumeSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -248,14 +260,25 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                     </h1>
                     <p className="text-slate-500 mt-1">Unidad de Origen: {vehicle.origen_unit}</p>
                 </div>
-                <div className="text-right w-48">
-                    <div className="flex justify-between text-sm font-medium text-slate-700 mb-1">
-                        <span>Progreso Total</span>
-                        <span>{calculateProgress()}%</span>
+                <div className="text-right flex flex-col items-end gap-3 w-48">
+                    <div className="w-full">
+                        <div className="flex justify-between text-sm font-medium text-slate-700 mb-1">
+                            <span>Progreso Total</span>
+                            <span>{calculateProgress()}%</span>
+                        </div>
+                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-amber-500 rounded-full" style={{ width: `${calculateProgress()}%` }} />
+                        </div>
                     </div>
-                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-amber-500 rounded-full" style={{ width: `${calculateProgress()}%` }} />
-                    </div>
+                    {isSupervisor && (
+                        <Button size="sm" variant="outline" className="w-full border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100" onClick={() => {
+                            setSelectedOperators(vehicle.assigned_operators || [])
+                            setIsAssignModalOpen(true)
+                        }}>
+                            <Users className="h-4 w-4 mr-2" />
+                            Asignar Operarios
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -300,6 +323,23 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                         {vAct.status === 'pending_review' && 'Esperando Aprobación'}
                                         {vAct.status === 'completed' && 'Verificado'}
                                     </Badge>
+                                    <div className="flex flex-col items-end mr-4">
+                                        {vAct.started_at && (
+                                            <span className="text-xs text-slate-500 font-medium whitespace-nowrap">
+                                                Inicio: {new Date(vAct.started_at).toLocaleDateString()} {new Date(vAct.started_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                            </span>
+                                        )}
+                                        {vAct.completed_at && (
+                                            <span className="text-xs text-slate-500 font-medium whitespace-nowrap">
+                                                Fin: {new Date(vAct.completed_at).toLocaleDateString()} {new Date(vAct.completed_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                            </span>
+                                        )}
+                                        {vAct.started_at && vAct.completed_at && (
+                                            <span className="text-xs font-bold text-blue-600">
+                                                {Math.round((new Date(vAct.completed_at).getTime() - new Date(vAct.started_at).getTime()) / (1000 * 60 * 60))}h {Math.round(((new Date(vAct.completed_at).getTime() - new Date(vAct.started_at).getTime()) / (1000 * 60)) % 60)}m
+                                            </span>
+                                        )}
+                                    </div>
                                     {isExpanded ? <ChevronDown className="h-5 w-5 text-slate-400" /> : <ChevronRight className="h-5 w-5 text-slate-400" />}
                                 </div>
                             </div>
@@ -333,15 +373,32 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                                 </Button>
                                             )}
                                             {isSupervisor && vAct.status === 'pending_review' && (
-                                                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white font-medium" onClick={() => updateActivityStatus(vAct.id, 'completed', currentUser!.name)}>
-                                                    Aprobar Etapa
-                                                </Button>
+                                                <>
+                                                    <Button size="sm" variant="outline" className="border-red-200 text-red-700 hover:bg-red-50" onClick={() => {
+                                                        const reason = window.prompt("Motivo del rechazo de la etapa:")
+                                                        if (reason) {
+                                                            updateActivityStatus(vAct.id, 'in_progress', currentUser!.name, reason)
+                                                        } else if (reason !== null) {
+                                                            alert("Debe ingresar un motivo para rechazar.")
+                                                        }
+                                                    }}>
+                                                        Rechazar Etapa
+                                                    </Button>
+                                                    <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white font-medium" onClick={() => updateActivityStatus(vAct.id, 'completed', currentUser!.name)}>
+                                                        Aprobar Etapa
+                                                    </Button>
+                                                </>
                                             )}
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
                                         {/* Left Side: Tasks and Materials (2 columns) */}
                                         <div className="md:col-span-2 space-y-6">
+                                            {vAct.rejection_reason && vAct.status === 'in_progress' && (
+                                                <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-800">
+                                                    <strong>Etapa Rechazada:</strong> {vAct.rejection_reason}
+                                                </div>
+                                            )}
                                             {/* Checklist Items */}
                                             <div className="space-y-3">
                                                 <div className="text-sm font-semibold text-slate-700 mb-1">Tareas del Checklist</div>
@@ -351,34 +408,61 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                                     const isDisabled = !isOperator || vAct.status === 'completed' || vAct.status === 'pending_review'
 
                                                     return (
-                                                        <label
-                                                            htmlFor={check.id}
-                                                            key={check.id}
-                                                            className={`flex items-start gap-4 p-3 hover:bg-slate-50 rounded-lg group transition-colors select-none border border-slate-100 ${isDisabled ? 'cursor-default' : 'cursor-pointer'}`}
-                                                        >
-                                                            <input
-                                                                id={check.id}
-                                                                type="checkbox"
-                                                                checked={isChecked}
-                                                                disabled={isDisabled}
-                                                                onChange={() => {
-                                                                    if (vAct.status === 'pending') updateActivityStatus(vAct.id, 'in_progress', currentUser!.name)
-                                                                    handleToggleChecklist(vAct.id, activity.id, check.id)
-                                                                }}
-                                                                className="mt-0.5 h-8 w-8 rounded border-slate-300 text-amber-600 focus:ring-amber-600 disabled:opacity-50 cursor-pointer animate-in fade-in"
-                                                            />
-                                                            <div className="flex-1">
+                                                        <div key={check.id} className="flex flex-col gap-2 p-3 hover:bg-slate-50 rounded-lg group transition-colors border border-slate-100">
+                                                            <div className="flex items-start justify-between gap-3">
                                                                 <p className={`text-base font-semibold ${isChecked ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
                                                                     {check.description}
                                                                 </p>
-                                                                {isChecked && vciLog && (
-                                                                    <div className="flex items-center gap-1.5 mt-1.5 text-xs text-slate-500">
-                                                                        <Clock className="h-3.5 w-3.5" />
-                                                                        Realizado por <span className="font-bold text-slate-700">{getOperatorName(vciLog.operator_id)}</span> el {new Date(vciLog.completed_at!).toLocaleString()}
-                                                                    </div>
-                                                                )}
+                                                                <div className="flex items-center gap-2 shrink-0">
+                                                                    {!vciLog ? (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="outline"
+                                                                            disabled={isDisabled}
+                                                                            onClick={() => {
+                                                                                if (vAct.status === 'pending') updateActivityStatus(vAct.id, 'in_progress', currentUser!.name)
+                                                                                handleToggleChecklist(vAct.id, activity.id, check.id, 'start')
+                                                                            }}
+                                                                        >
+                                                                            Iniciar
+                                                                        </Button>
+                                                                    ) : !vciLog.is_completed ? (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            className="bg-green-600 hover:bg-green-700 text-white"
+                                                                            disabled={isDisabled}
+                                                                            onClick={() => handleToggleChecklist(vAct.id, activity.id, check.id, 'complete')}
+                                                                        >
+                                                                            Finalizar
+                                                                        </Button>
+                                                                    ) : (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                            disabled={isDisabled}
+                                                                            onClick={() => handleToggleChecklist(vAct.id, activity.id, check.id, 'reset')}
+                                                                        >
+                                                                            Deshacer
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
                                                             </div>
-                                                        </label>
+                                                            {vciLog && (
+                                                                <div className="flex flex-col gap-1 text-xs text-slate-500 bg-slate-50 p-2 rounded mt-1">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <Clock className="h-3.5 w-3.5" />
+                                                                        Inicio: {new Date(vciLog.started_at!).toLocaleString()} por <span className="font-bold text-slate-700">{getOperatorName(vciLog.operator_id)}</span>
+                                                                    </div>
+                                                                    {vciLog.is_completed && (
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                                                                            Fin: {new Date(vciLog.completed_at!).toLocaleString()}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     )
                                                 })}
                                                 {checks.length === 0 && (
@@ -730,6 +814,55 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                 <Button type="submit" className="bg-blue-600 hover:bg-blue-700 font-semibold px-6" disabled={!selectedBatchId || (!!selectedBatch?.serial_numbers?.length && !selectedSerialNumber)}>Consumir</Button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {/* Assign Operators Modal */}
+            {isAssignModalOpen && (
+                <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md border border-slate-200 overflow-hidden flex flex-col">
+                        <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+                            <Users className="h-5 w-5 text-blue-600" />
+                            <h2 className="text-lg font-bold text-slate-900">Asignar Operarios al Tanque</h2>
+                        </div>
+                        
+                        <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+                            <p className="text-sm text-slate-500 mb-2">Seleccione los operarios que podrán ver y trabajar en este tanque.</p>
+                            <div className="space-y-2">
+                                {users.filter(u => u.role === 'operator').map(op => (
+                                    <label key={op.id} className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+                                        <input 
+                                            type="checkbox"
+                                            className="h-4 w-4 text-blue-600 rounded border-slate-300"
+                                            checked={selectedOperators.includes(op.id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setSelectedOperators([...selectedOperators, op.id])
+                                                } else {
+                                                    setSelectedOperators(selectedOperators.filter(id => id !== op.id))
+                                                }
+                                            }}
+                                        />
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-800">{op.name} {op.lastName || ''}</p>
+                                            <p className="text-xs text-slate-500">{op.email}</p>
+                                        </div>
+                                    </label>
+                                ))}
+                                {users.filter(u => u.role === 'operator').length === 0 && (
+                                    <p className="text-sm text-slate-500 text-center italic py-4">No hay operarios registrados en el sistema.</p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="p-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
+                            <Button type="button" variant="ghost" onClick={() => setIsAssignModalOpen(false)}>Cancelar</Button>
+                            <Button type="button" className="bg-blue-600 hover:bg-blue-700" onClick={async () => {
+                                await assignOperatorsToVehicle(vehicle.id, selectedOperators)
+                                setIsAssignModalOpen(false)
+                                alert("Operarios asignados correctamente.")
+                            }}>Guardar Asignación</Button>
+                        </div>
                     </div>
                 </div>
             )}
