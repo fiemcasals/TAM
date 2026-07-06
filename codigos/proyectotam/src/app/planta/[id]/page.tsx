@@ -75,32 +75,32 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
         return `${diffDays}d ${remainingHours}h ${remainingMins}m`
     }
 
-    const getParticipantsForActivity = (vActId: string) => {
-        const participants = new Set<string>()
+    // Discriminates participants by where they actually worked: each checklist task,
+    // material consumption, or manually added at the activity/etapa level (not tied to a task).
+    const getParticipantsBreakdownForActivity = (vActId: string) => {
+        const groups: { label: string, names: string[] }[] = []
 
-        // Operators from checklists
-        const chkItems = vehicleChecklistItems.filter(vci => vci.vehicle_activity_id === vActId && vci.is_completed)
-        chkItems.forEach(item => {
-            if (item.operator_id) {
-                participants.add(getOperatorName(item.operator_id))
-            }
+        const checks = checklistItems.filter(c => vehicleChecklistItems.some(vci => vci.vehicle_activity_id === vActId && vci.checklist_id === c.id))
+        checks.forEach(check => {
+            const vciLog = vehicleChecklistItems.find(vci => vci.vehicle_activity_id === vActId && vci.checklist_id === check.id)
+            const names = new Set<string>()
+            if (vciLog?.operator_id) names.add(getOperatorName(vciLog.operator_id))
+            vciLog?.additional_operators?.forEach(operatorId => names.add(getOperatorName(operatorId)))
+            if (names.size > 0) groups.push({ label: check.description, names: Array.from(names) })
         })
 
-        // Operators from material consumption
-        const consumptions = activityMaterialConsumptions.filter(c => c.vehicle_activity_id === vActId)
-        consumptions.forEach(c => {
-            if (c.operator_id) {
-                participants.add(getOperatorName(c.operator_id))
-            }
+        const consumptionNames = new Set<string>()
+        activityMaterialConsumptions.filter(c => c.vehicle_activity_id === vActId).forEach(c => {
+            if (c.operator_id) consumptionNames.add(getOperatorName(c.operator_id))
         })
+        if (consumptionNames.size > 0) groups.push({ label: "Consumo de materiales", names: Array.from(consumptionNames) })
 
-        // Operators added manually as participants
         const vAct = vehicleActivities.find(va => va.id === vActId)
-        vAct?.additional_operators?.forEach(operatorId => {
-            participants.add(getOperatorName(operatorId))
-        })
+        const generalNames = new Set<string>()
+        vAct?.additional_operators?.forEach(operatorId => generalNames.add(getOperatorName(operatorId)))
+        if (generalNames.size > 0) groups.push({ label: "General de la etapa", names: Array.from(generalNames) })
 
-        return Array.from(participants)
+        return groups
     }
 
     // UI State
@@ -791,7 +791,7 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                                                 type="button"
                                                                 onClick={() => { setAddingParticipantFor(vAct.id); setNewParticipantId("") }}
                                                                 className="text-blue-600 hover:text-blue-800 text-xs font-semibold flex items-center gap-0.5"
-                                                                title="Agregar operario"
+                                                                title="Agregar operario general de la etapa (no ligado a una tarea puntual)"
                                                             >
                                                                 <Plus className="h-3.5 w-3.5" /> Agregar
                                                             </button>
@@ -826,12 +826,19 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                                             </button>
                                                         </div>
                                                     )}
-                                                    {getParticipantsForActivity(vAct.id).length > 0 ? (
-                                                        <div className="flex flex-wrap gap-1.5">
-                                                            {getParticipantsForActivity(vAct.id).map(name => (
-                                                                <Badge key={name} variant="secondary" className="bg-slate-200/80 hover:bg-slate-200 text-slate-800 font-medium px-2 py-0.5 text-xs">
-                                                                    {name}
-                                                                </Badge>
+                                                    {getParticipantsBreakdownForActivity(vAct.id).length > 0 ? (
+                                                        <div className="space-y-1.5">
+                                                            {getParticipantsBreakdownForActivity(vAct.id).map(group => (
+                                                                <div key={group.label} className="text-xs">
+                                                                    <span className="text-slate-500">{group.label}:</span>{' '}
+                                                                    <span className="inline-flex flex-wrap gap-1 align-middle">
+                                                                        {group.names.map(name => (
+                                                                            <Badge key={name} variant="secondary" className="bg-slate-200/80 hover:bg-slate-200 text-slate-800 font-medium px-1.5 py-0 text-[11px]">
+                                                                                {name}
+                                                                            </Badge>
+                                                                        ))}
+                                                                    </span>
+                                                                </div>
                                                             ))}
                                                         </div>
                                                     ) : (
