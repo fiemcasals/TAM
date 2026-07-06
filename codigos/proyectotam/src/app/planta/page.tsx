@@ -19,17 +19,7 @@ export default function PlantaPage() {
     
     const isOperator = currentUser?.role === 'operator'
     const [searchTerm, setSearchTerm] = useState("")
-    const tanksInPlant = vehicles
-        .filter(v => v.status === 'in_plant')
-        .filter(v => {
-            if (!isOperator) return true
-            if (!v.assigned_operators || v.assigned_operators.length === 0) return true
-            return v.assigned_operators.includes(currentUser.id)
-        })
-        .filter(v =>
-            v.ni.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            v.origen_unit.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+    const [progressFilter, setProgressFilter] = useState<'all' | 'not_started' | 'in_progress' | 'complete'>('all')
 
     // Helper to calculate real progress based on checked items
     const calculateProgress = (vehicleId: string) => {
@@ -46,6 +36,25 @@ export default function PlantaPage() {
         if (actualTotalChecklists === 0) return 0
         return Math.round((completedItems / actualTotalChecklists) * 100)
     }
+
+    const tanksInPlant = vehicles
+        .filter(v => v.status === 'in_plant')
+        .filter(v => {
+            if (!isOperator) return true
+            if (!v.assigned_operators || v.assigned_operators.length === 0) return true
+            return v.assigned_operators.includes(currentUser.id)
+        })
+        .filter(v =>
+            v.ni.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            v.origen_unit.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .filter(v => {
+            if (progressFilter === 'all') return true
+            const p = calculateProgress(v.id)
+            if (progressFilter === 'not_started') return p === 0
+            if (progressFilter === 'in_progress') return p > 0 && p < 100
+            return p === 100
+        })
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-6">
@@ -65,9 +74,20 @@ export default function PlantaPage() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Button variant="outline" size="icon">
-                        <SlidersHorizontal className="h-4 w-4" />
-                    </Button>
+                    <div className="relative">
+                        <SlidersHorizontal className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400 pointer-events-none" />
+                        <select
+                            value={progressFilter}
+                            onChange={(e) => setProgressFilter(e.target.value as typeof progressFilter)}
+                            className="h-10 pl-9 pr-3 rounded-md border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                            title="Filtrar por progreso"
+                        >
+                            <option value="all">Todos los progresos</option>
+                            <option value="not_started">Sin iniciar</option>
+                            <option value="in_progress">En progreso</option>
+                            <option value="complete">Completo</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
