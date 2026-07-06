@@ -36,7 +36,8 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
         updateMaterialConsumption,
         updateActivityStatus,
         assignOperatorsToVehicle,
-        addActivityParticipant
+        addActivityParticipant,
+        addChecklistItemParticipant
     } = useAppStore()
 
     const currentUser = useAuthStore(state => state.currentUser)
@@ -121,6 +122,10 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
     const [addingParticipantFor, setAddingParticipantFor] = useState<string | null>(null)
     const [newParticipantId, setNewParticipantId] = useState("")
 
+    // Add participant to a single checklist task state
+    const [addingTaskParticipantFor, setAddingTaskParticipantFor] = useState<string | null>(null)
+    const [newTaskParticipantId, setNewTaskParticipantId] = useState("")
+
     // Inline editing consumption state
     const [editingConsumptionId, setEditingConsumptionId] = useState<string | null>(null)
     const [editingQuantity, setEditingQuantity] = useState<number>(0)
@@ -185,6 +190,21 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
         await addActivityParticipant(vehicleActivityId, newParticipantId)
         setAddingParticipantFor(null)
         setNewParticipantId("")
+    }
+
+    const getChecklistItemParticipants = (vci?: { operator_id?: string, additional_operators?: string[] }) => {
+        if (!vci) return []
+        const names = new Set<string>()
+        if (vci.operator_id) names.add(getOperatorName(vci.operator_id))
+        vci.additional_operators?.forEach(operatorId => names.add(getOperatorName(operatorId)))
+        return Array.from(names)
+    }
+
+    const handleAddTaskParticipant = async (vehicleChecklistItemId: string) => {
+        if (!newTaskParticipantId) return
+        await addChecklistItemParticipant(vehicleChecklistItemId, newTaskParticipantId)
+        setAddingTaskParticipantFor(null)
+        setNewTaskParticipantId("")
     }
 
     const formatElapsed = (totalSeconds: number) => {
@@ -555,6 +575,55 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                                                         <div className="flex items-center gap-1.5">
                                                                             <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
                                                                             Fin: {new Date(vciLog.completed_at!).toLocaleString()}
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="flex items-center justify-between gap-2 pt-1 mt-1 border-t border-slate-200/70">
+                                                                        <div className="flex flex-wrap items-center gap-1">
+                                                                            <Users className="h-3 w-3 text-slate-400" />
+                                                                            {getChecklistItemParticipants(vciLog).map(name => (
+                                                                                <Badge key={name} variant="secondary" className="bg-slate-200/80 text-slate-700 font-medium px-1.5 py-0 text-[11px]">
+                                                                                    {name}
+                                                                                </Badge>
+                                                                            ))}
+                                                                        </div>
+                                                                        {isWorkMode && addingTaskParticipantFor !== vciLog.id && (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => { setAddingTaskParticipantFor(vciLog.id); setNewTaskParticipantId("") }}
+                                                                                className="text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-0.5 shrink-0"
+                                                                                title="Agregar operario a esta tarea"
+                                                                            >
+                                                                                <Plus className="h-3 w-3" /> Agregar
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                    {addingTaskParticipantFor === vciLog.id && (
+                                                                        <div className="flex items-center gap-1.5 mt-1">
+                                                                            <select
+                                                                                className="text-xs border border-slate-200 rounded px-2 py-1 flex-1 bg-white"
+                                                                                value={newTaskParticipantId}
+                                                                                onChange={(e) => setNewTaskParticipantId(e.target.value)}
+                                                                            >
+                                                                                <option value="">Seleccionar operario...</option>
+                                                                                {users.map(u => (
+                                                                                    <option key={u.id} value={u.id}>{u.name} {u.lastName || ""}</option>
+                                                                                ))}
+                                                                            </select>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleAddTaskParticipant(vciLog.id)}
+                                                                                disabled={!newTaskParticipantId}
+                                                                                className="text-green-700 hover:text-green-900 text-xs font-bold px-2 py-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                                                                            >
+                                                                                OK
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => setAddingTaskParticipantFor(null)}
+                                                                                className="text-slate-400 hover:text-slate-700 text-xs px-1"
+                                                                            >
+                                                                                ✕
+                                                                            </button>
                                                                         </div>
                                                                     )}
                                                                 </div>

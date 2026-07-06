@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Vehicle, Supply, SupplyBatch, Activity, ChecklistItem, VehicleActivity, VehicleChecklistItem, ActivityMaterialConsumption, AuditLog, ActivityStatus, VehicleStatus } from '@/types'
-import { getVehicles, addVehicle, updateVehicleStatus, updateVehicle as updateVehicleAction, getCatalogData, toggleChecklistItemAction, updateActivityStatusAction, initVehicleActivitiesAction, addActivityParticipantAction } from '@/lib/actions/plantaActions'
+import { getVehicles, addVehicle, updateVehicleStatus, updateVehicle as updateVehicleAction, getCatalogData, toggleChecklistItemAction, updateActivityStatusAction, initVehicleActivitiesAction, addActivityParticipantAction, addChecklistItemParticipantAction } from '@/lib/actions/plantaActions'
 import { getSupplies, addSupplyAction, updateSupplyAction, deleteSupplyAction, addBatchAction, updateBatchAction, deleteBatchAction, consumeMaterialAction, restoreMaterialAction, updateConsumptionAction } from '@/lib/actions/supplyActions'
 
 interface AppState {
@@ -43,6 +43,7 @@ interface AppState {
     updateMaterialConsumption: (consumptionId: string, newQuantity: number) => Promise<{ success: boolean; message?: string }>
     updateActivityStatus: (vehicleActivityId: string, status: ActivityStatus, userId: string, reason?: string) => Promise<void>
     addActivityParticipant: (vehicleActivityId: string, operatorId: string) => Promise<void>
+    addChecklistItemParticipant: (vehicleChecklistItemId: string, operatorId: string) => Promise<void>
 }
 
 export const useAppStore = create<AppState>()((set, get) => ({
@@ -225,6 +226,13 @@ export const useAppStore = create<AppState>()((set, get) => ({
     addActivityParticipant: async (vehicleActivityId, operatorId) => {
         await addActivityParticipantAction(vehicleActivityId, operatorId)
         const vAct = get().vehicleActivities.find(va => va.id === vehicleActivityId)
+        if (vAct) await get().fetchVehicleDetails(vAct.vehicle_id)
+    },
+
+    addChecklistItemParticipant: async (vehicleChecklistItemId, operatorId) => {
+        await addChecklistItemParticipantAction(vehicleChecklistItemId, operatorId)
+        const vci = get().vehicleChecklistItems.find(v => v.id === vehicleChecklistItemId)
+        const vAct = vci ? get().vehicleActivities.find(va => va.id === vci.vehicle_activity_id) : undefined
         if (vAct) await get().fetchVehicleDetails(vAct.vehicle_id)
     }
 }))

@@ -103,6 +103,7 @@ model VehicleChecklistItem {
   running_since       DateTime? // desde cuándo corre el segmento actual (null si está pausada/completada/pendiente)
   accumulated_seconds Int      @default(0) // tiempo activo acumulado de segmentos previos ya detenidos
   operator_id         String?
+  additional_operators String[] @default([]) // operarios agregados manualmente como participantes de esta tarea puntual
 
   vehicleActivity     VehicleActivity @relation(fields: [vehicle_activity_id], references: [id], onDelete: Cascade)
   checklistItem       ChecklistItem   @relation(fields: [checklist_id], references: [id], onDelete: Cascade)

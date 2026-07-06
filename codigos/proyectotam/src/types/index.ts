@@ -80,6 +80,7 @@ export interface VehicleChecklistItem {
     running_since?: string
     accumulated_seconds: number
     operator_id?: string
+    additional_operators?: string[]
 }
 
 export interface ActivityMaterialConsumption {
