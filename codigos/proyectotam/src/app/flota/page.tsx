@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ObservationsModal } from "@/components/vehicles/ObservationsModal"
+import { FleetStatusNav } from "@/components/vehicles/FleetStatusNav"
 import type { Vehicle, ArmyStatus } from "@/types"
 
 export default function FlotaPage() {
@@ -75,6 +76,8 @@ export default function FlotaPage() {
                 </h1>
                 <p className="text-slate-500 mt-2">Seguimiento de unidades antes de su ingreso a la planta de modernización.</p>
             </div>
+
+            <FleetStatusNav vehicles={vehicles} />
 
             <Card>
                 <CardHeader className="bg-slate-50 border-b pb-4 flex flex-row items-center justify-between">

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Search, Activity, Archive } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { FleetStatusNav } from "@/components/vehicles/FleetStatusNav"
 
 export default function ServicioPage() {
     const { vehicles } = useAppStore()
@@ -41,6 +42,8 @@ export default function ServicioPage() {
                     </div>
                 </div>
             </div>
+
+            <FleetStatusNav vehicles={vehicles} />
 
             <Card>
                 <CardHeader>

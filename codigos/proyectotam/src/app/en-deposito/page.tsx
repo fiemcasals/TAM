@@ -11,6 +11,7 @@ import { Search, Archive, MessageSquareText } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ObservationsModal } from "@/components/vehicles/ObservationsModal"
+import { FleetStatusNav } from "@/components/vehicles/FleetStatusNav"
 import type { Vehicle } from "@/types"
 
 export default function EnDepositoPage() {
@@ -53,6 +54,8 @@ export default function EnDepositoPage() {
                     </div>
                 </div>
             </div>
+
+            <FleetStatusNav vehicles={vehicles} />
 
             <Card>
                 <CardHeader>
