@@ -1,7 +1,7 @@
 "use server"
 
 import { PrismaClient } from '@prisma/client'
-import { getSession } from "./authActions"
+import { getSession } from "@/lib/session"
 
 const prisma = new PrismaClient()
 
