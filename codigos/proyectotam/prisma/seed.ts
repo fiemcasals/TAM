@@ -19,7 +19,6 @@ async function main() {
   await prisma.supply.deleteMany()
   await prisma.checklistItem.deleteMany()
   await prisma.activity.deleteMany()
-  await prisma.vehicle.deleteMany()
   await prisma.user.deleteMany()
 
   // 1. Cargar Usuarios por Roles
@@ -83,10 +82,9 @@ async function main() {
     },
   ]
 
-  const seededUsers = []
   for (const u of USERS_TO_SEED) {
     const hashedPassword = await bcrypt.hash(u.password, 10)
-    const seeded = await prisma.user.create({
+    await prisma.user.create({
       data: {
         name: u.name,
         lastName: u.lastName,
@@ -96,108 +94,161 @@ async function main() {
         status: 'active',
       }
     })
-    seededUsers.push(seeded)
     console.log(`Creado usuario: ${u.email} (${u.role})`)
   }
 
-  const op1 = seededUsers.find(u => u.email === 'operator1@op.com')!
-  const op2 = seededUsers.find(u => u.email === 'operator2@op.com')!
-  const op3 = seededUsers.find(u => u.email === 'operator3@op.com')!
-
-  // 2. Cargar Actividades del Catálogo
+  // 2. Cargar Etapas del proceso de modernización (según Proyecto TAM2C.ods)
   console.log('Cargando catálogo de actividades...')
   const INITIAL_ACTIVITIES = [
-    { id: 'act_1', name: 'Actividades previas y recepción de torres', suggested_order: 1 },
-    { id: 'act_2', name: 'Retrabajo soporte placas PCU', suggested_order: 2 },
-    { id: 'act_3', name: 'Enmascarado de torre parte exterior', suggested_order: 3 },
-    { id: 'act_4', name: 'Pintado de Torre y componentes', suggested_order: 4 },
-    { id: 'act_5', name: 'Procedimientos en la Torre', suggested_order: 5 },
-    { id: 'act_6', name: 'Procedimientos en Batea', suggested_order: 6 },
+    { id: 'act_1', name: 'Desmontaje torre-chasis', suggested_order: 1 },
+    { id: 'act_2', name: 'Desarme torre', suggested_order: 2 },
+    { id: 'act_3', name: 'Cañón', suggested_order: 3 },
+    { id: 'act_4', name: 'Torre', suggested_order: 4 },
+    { id: 'act_5', name: 'Chasis', suggested_order: 5 },
+    { id: 'act_6', name: 'Montaje de la torre en el chasis', suggested_order: 6 },
+    { id: 'act_7', name: 'Certificación', suggested_order: 7 },
   ]
 
   for (const act of INITIAL_ACTIVITIES) {
     await prisma.activity.create({ data: act })
   }
 
-  // 3. Cargar Checklist Items por Actividad
+  // 3. Cargar Tareas de Checklist por Etapa (según Proyecto TAM2C.ods)
+  // El número entre corchetes es la referencia (WBS) a la tarea en el documento fuente.
   console.log('Cargando items de checklist...')
   const INITIAL_CHECKLISTS = [
-    { id: 'chk_1_1', activity_id: 'act_1', description: 'Inspección Torre Mecanizada' },
-    { id: 'chk_1_2', activity_id: 'act_1', description: 'Solicitar entrega de componentes reprogramados' },
-    { id: 'chk_1_3', activity_id: 'act_1', description: 'Retrabajo BOSSES soporte pantalla y manillar' },
+    // Etapa 1: Desmontaje torre-chasis
+    { id: 'chk_1_1', activity_id: 'act_1', description: 'Desmontaje torre [1.1.1]' },
+    { id: 'chk_1_2', activity_id: 'act_1', description: 'Mover chasis al depósito [1.1.2]' },
 
-    { id: 'chk_2_1', activity_id: 'act_2', description: 'Retrabajo soporte placas PCU' },
-    { id: 'chk_2_2', activity_id: 'act_2', description: 'Soldar soporte de pala corazón de tres piezas' },
-    { id: 'chk_2_3', activity_id: 'act_2', description: 'Agrandar orificios de junta hermeticidad de frontis' },
-    { id: 'chk_2_4', activity_id: 'act_2', description: 'Re-instalación de soportes de cañones de ametralladoras' },
+    // Etapa 2: Desarme torre
+    { id: 'chk_2_1', activity_id: 'act_2', description: 'Desarme torre [1.2.1]' },
+    { id: 'chk_2_2', activity_id: 'act_2', description: 'Clasificación de material [1.2.2]' },
+    { id: 'chk_2_3', activity_id: 'act_2', description: 'Mover el cañón al depósito [1.2.3]' },
 
-    { id: 'chk_3_1', activity_id: 'act_3', description: 'Enmascarado de torre parte exterior' },
-    { id: 'chk_3_2', activity_id: 'act_3', description: 'Enmascarado de Cñ y linea elástica' },
-    { id: 'chk_3_3', activity_id: 'act_3', description: 'Enmascarado de funda térmica, frontis, evacuador' },
+    // Etapa 3: Cañón
+    { id: 'chk_3_1', activity_id: 'act_3', description: 'Mover el cañon al sector de mantenimiento [1.3.1]' },
+    { id: 'chk_3_2', activity_id: 'act_3', description: 'Mantenimiento [1.3.2]' },
+    { id: 'chk_3_3', activity_id: 'act_3', description: 'Montaje de los componentes del cañon [1.3.3]' },
+    { id: 'chk_3_4', activity_id: 'act_3', description: 'Control de montaje [1.3.4]' },
+    { id: 'chk_3_5', activity_id: 'act_3', description: 'Llenado de amortiguador y freno [1.3.5]' },
+    { id: 'chk_3_6', activity_id: 'act_3', description: 'Control de carga de fluidos [1.3.6]' },
+    { id: 'chk_3_7', activity_id: 'act_3', description: 'Entrega (a DIGID) y control [1.3.7]' },
+    { id: 'chk_3_8', activity_id: 'act_3', description: 'Pintura — Empapelado [1.3.8.1]' },
+    { id: 'chk_3_9', activity_id: 'act_3', description: 'Pintura — Pintura [1.3.8.2]' },
+    { id: 'chk_3_10', activity_id: 'act_3', description: 'Pintura — Cañon listo para montar [1.3.8.3]' },
 
-    { id: 'chk_4_1', activity_id: 'act_4', description: 'Pintado de Torre, Cñ, frontis, funda térmica' },
-    { id: 'chk_4_2', activity_id: 'act_4', description: 'Limpieza y engrase de corona' },
-    { id: 'chk_4_3', activity_id: 'act_4', description: 'Instalación de corona en posa-torre' },
+    // Etapa 4: Torre
+    { id: 'chk_4_1', activity_id: 'act_4', description: 'Mecanizacion de torre y soportes en IMPSA — Traslado a IMPSA [1.4.1.1]' },
+    { id: 'chk_4_2', activity_id: 'act_4', description: 'Mecanizacion de torre y soportes en IMPSA — Mecanización de torre [1.4.1.2]' },
+    { id: 'chk_4_3', activity_id: 'act_4', description: 'Mecanizacion de torre y soportes en IMPSA — Mecanizado de soportes y partes [1.4.1.3]' },
+    { id: 'chk_4_4', activity_id: 'act_4', description: 'Mecanizacion de torre y soportes en IMPSA — Faldones y canastos [1.4.1.4]' },
+    { id: 'chk_4_5', activity_id: 'act_4', description: 'Mecanizacion de torre y soportes en IMPSA — Traslado a Boulogne [1.4.1.5]' },
+    { id: 'chk_4_6', activity_id: 'act_4', description: 'Recepción y control — Control de mecanización [1.4.2.1]' },
+    { id: 'chk_4_7', activity_id: 'act_4', description: 'Pintura — Empapelado [1.4.3.1]' },
+    { id: 'chk_4_8', activity_id: 'act_4', description: 'Pintura — Pintado [1.4.3.2]' },
+    { id: 'chk_4_9', activity_id: 'act_4', description: 'Pintura — Traslado de torre a la línea [1.4.3.3]' },
+    { id: 'chk_4_10', activity_id: 'act_4', description: 'Armado de la torre > Preparación inicial — Montaje en posatorre [1.4.4.1.1]' },
+    { id: 'chk_4_11', activity_id: 'act_4', description: 'Armado de la torre > Preparación inicial — Repaso de roscas de boses [1.4.4.1.2]' },
+    { id: 'chk_4_12', activity_id: 'act_4', description: 'Armado de la torre > Inicio del armado de torre — Montaje del piso [1.4.4.2.1]' },
+    { id: 'chk_4_13', activity_id: 'act_4', description: 'Armado de la torre > Inicio del armado de torre — Colocación del cañón [1.4.4.2.2]' },
+    { id: 'chk_4_14', activity_id: 'act_4', description: 'Armado de la torre > Inicio del armado de torre — Frontis + columna derecha [1.4.4.2.3]' },
+    { id: 'chk_4_15', activity_id: 'act_4', description: 'Armado de la torre > Montar soportes del Cñ y Elevación — Montar soportes del cañón, contrapesos, etc [1.4.4.3.1]' },
+    { id: 'chk_4_16', activity_id: 'act_4', description: 'Armado de la torre > Montar soportes del Cñ y Elevación — Cilintro de elevación y motor eléctrico con soporte [1.4.4.3.2]' },
+    { id: 'chk_4_17', activity_id: 'act_4', description: 'Armado de la torre > Montar Giro — Montaje completo de mandos, soportes, motor, etc [1.4.4.4.1]' },
+    { id: 'chk_4_18', activity_id: 'act_4', description: 'Armado de la torre > Canasto — Colocación [1.4.4.5.1]' },
+    { id: 'chk_4_19', activity_id: 'act_4', description: 'Armado de la torre > Soportería restante (traba de torre, etc) — Soportes de componentes electrónicos (IMPSA) [1.4.4.6.1]' },
+    { id: 'chk_4_20', activity_id: 'act_4', description: 'Armado de la torre > Soportería restante (traba de torre, etc) — Soportes de componentes electrónicos (Elbit) [1.4.4.6.2]' },
+    { id: 'chk_4_21', activity_id: 'act_4', description: 'Armado de la torre > Soportería restante (traba de torre, etc) — Soportes del TAM original [1.4.4.6.3]' },
+    { id: 'chk_4_22', activity_id: 'act_4', description: 'Armado de la torre > Soportería restante (traba de torre, etc) — Electrónica [1.4.4.6.4]' },
+    { id: 'chk_4_23', activity_id: 'act_4', description: 'Armado de la torre > Soportería restante (traba de torre, etc) — Componentes en cola de pato [1.4.4.6.5]' },
+    { id: 'chk_4_24', activity_id: 'act_4', description: 'Armado de la torre > Soportería restante (traba de torre, etc) — Detectores de amenaza laser [1.4.4.6.6]' },
+    { id: 'chk_4_25', activity_id: 'act_4', description: 'Armado de la torre > Colocación de soportes y dispositivos — Soporte (IMPSA) y PCU [1.4.4.7.1]' },
+    { id: 'chk_4_26', activity_id: 'act_4', description: 'Armado de la torre > Colocación de soportes y dispositivos — Componentes y dispositivos Elbit [1.4.4.7.2]' },
+    { id: 'chk_4_27', activity_id: 'act_4', description: 'Armado de la torre > Colocación de soportes y dispositivos — Rotor del COAPS y COAPS J Tan [1.4.4.7.3]' },
+    { id: 'chk_4_28', activity_id: 'act_4', description: 'Armado de la torre > Colocación de soportes y dispositivos — Control de torques! [1.4.4.7.4]' },
+    { id: 'chk_4_29', activity_id: 'act_4', description: 'Armado de la torre > Colocación de soportes y dispositivos — Otros componentes internos de torre [1.4.4.7.5]' },
+    { id: 'chk_4_30', activity_id: 'act_4', description: 'Armado de la torre > Colocación de soportes y dispositivos — Cableado guia [1.4.4.7.6]' },
+    { id: 'chk_4_31', activity_id: 'act_4', description: 'Armado de la torre > Componentes y dispositivos con sus soportes — Componentes y dispositivos [1.4.4.8.1]' },
+    { id: 'chk_4_32', activity_id: 'act_4', description: 'Armado de la torre > Componentes y dispositivos con sus soportes — Anillo colector [1.4.4.8.2]' },
+    { id: 'chk_4_33', activity_id: 'act_4', description: 'Armado de la torre > Componentes y dispositivos con sus soportes — TPDB [1.4.4.8.3]' },
+    { id: 'chk_4_34', activity_id: 'act_4', description: 'Armado de la torre > Componentes y dispositivos con sus soportes — Otros dispositivos [1.4.4.8.4]' },
+    { id: 'chk_4_35', activity_id: 'act_4', description: 'Armado de la torre > Componentes y dispositivos con sus soportes — COAPS Apuntador [1.4.4.8.5]' },
+    { id: 'chk_4_36', activity_id: 'act_4', description: 'Armado de la torre > Control Elbit en Potro — Traslado al potro [1.4.4.9.1]' },
+    { id: 'chk_4_37', activity_id: 'act_4', description: 'Armado de la torre > Control Elbit en Potro — Control y ajustes [1.4.4.9.2]' },
+    { id: 'chk_4_38', activity_id: 'act_4', description: 'Armado de la torre > Control Elbit en Potro — Traslado a la línea [1.4.4.9.3]' },
+    { id: 'chk_4_39', activity_id: 'act_4', description: 'Armado de la torre > Trabajos post Potro — Ajuste de precintos [1.4.4.10.1]' },
+    { id: 'chk_4_40', activity_id: 'act_4', description: 'Armado de la torre > Trabajos post Potro — Bloc de cierre, cesto de vainas etc [1.4.4.10.2]' },
+    { id: 'chk_4_41', activity_id: 'act_4', description: 'Armado de la torre > Trabajos post Potro — TZF + periscopios [1.4.4.10.3]' },
+    { id: 'chk_4_42', activity_id: 'act_4', description: 'Armado de la torre > Trabajos post Potro — Sistema contra incendios [1.4.4.10.4]' },
+    { id: 'chk_4_43', activity_id: 'act_4', description: 'Armado de la torre > Trabajos post Potro — Control [1.4.4.10.5]' },
+    { id: 'chk_4_44', activity_id: 'act_4', description: 'Torre lista para montar [1.4.5]' },
 
-    { id: 'chk_5_1', activity_id: 'act_5', description: 'Colocación de Corona Giratoria' },
-    { id: 'chk_5_2', activity_id: 'act_5', description: 'Colocación del cañón y fijación con percha' },
-    { id: 'chk_5_3', activity_id: 'act_5', description: 'Instalación de piso de torre y traversa' },
+    // Etapa 5: Chasis
+    { id: 'chk_5_1', activity_id: 'act_5', description: 'Mover el chasis del depósito a la línea [1.5.1]' },
+    { id: 'chk_5_2', activity_id: 'act_5', description: 'Desarmar — Grupo motopropulsor [1.5.2.1]' },
+    { id: 'chk_5_3', activity_id: 'act_5', description: 'Desarmar — Sistema de rodamiento [1.5.2.2]' },
+    { id: 'chk_5_4', activity_id: 'act_5', description: 'Desarmar — Sistema de refrigeración [1.5.2.3]' },
+    { id: 'chk_5_5', activity_id: 'act_5', description: 'Desarmar — Sistema de alimentación (combustible) [1.5.2.4]' },
+    { id: 'chk_5_6', activity_id: 'act_5', description: 'Desarmar — Sistema de freno [1.5.2.5]' },
+    { id: 'chk_5_7', activity_id: 'act_5', description: 'Desarmar — Sistema contra incendio [1.5.2.6]' },
+    { id: 'chk_5_8', activity_id: 'act_5', description: 'Desarmar — Tanques de combustible [1.5.2.7]' },
+    { id: 'chk_5_9', activity_id: 'act_5', description: 'Desarmar — Lavado [1.5.2.8]' },
+    { id: 'chk_5_10', activity_id: 'act_5', description: 'Mantenimiento — Grupo motopropulsor [1.5.3.1]' },
+    { id: 'chk_5_11', activity_id: 'act_5', description: 'Mantenimiento — Sistema de rodamiento [1.5.3.2]' },
+    { id: 'chk_5_12', activity_id: 'act_5', description: 'Mantenimiento — Sistema de refrigeración [1.5.3.3]' },
+    { id: 'chk_5_13', activity_id: 'act_5', description: 'Mantenimiento — Sistema de alimentación (combustible) [1.5.3.4]' },
+    { id: 'chk_5_14', activity_id: 'act_5', description: 'Mantenimiento — Sistema de freno [1.5.3.5]' },
+    { id: 'chk_5_15', activity_id: 'act_5', description: 'Mantenimiento — Sistema contra incendio [1.5.3.6]' },
+    { id: 'chk_5_16', activity_id: 'act_5', description: 'Mantenimiento — Tanques de combustible [1.5.3.7]' },
+    { id: 'chk_5_17', activity_id: 'act_5', description: 'Soldaduras — Soportes de tanques suplementarios [1.5.4.1]' },
+    { id: 'chk_5_18', activity_id: 'act_5', description: 'Soldaduras — Soportes del sistema para el conductor [1.5.4.2]' },
+    { id: 'chk_5_19', activity_id: 'act_5', description: 'Soldaduras — Soportes APU [1.5.4.3]' },
+    { id: 'chk_5_20', activity_id: 'act_5', description: 'Montaje — Grupo motopropulsor [1.5.5.1]' },
+    { id: 'chk_5_21', activity_id: 'act_5', description: 'Montaje — Sistema de rodamiento [1.5.5.2]' },
+    { id: 'chk_5_22', activity_id: 'act_5', description: 'Montaje — Sistema de refrigeración [1.5.5.3]' },
+    { id: 'chk_5_23', activity_id: 'act_5', description: 'Montaje — Sistema de alimentación (combustible) [1.5.5.4]' },
+    { id: 'chk_5_24', activity_id: 'act_5', description: 'Montaje — Sistema de freno [1.5.5.5]' },
+    { id: 'chk_5_25', activity_id: 'act_5', description: 'Montaje — Sistema contra incendio [1.5.5.6]' },
+    { id: 'chk_5_26', activity_id: 'act_5', description: 'Montaje — Tanques de combustible [1.5.5.7]' },
+    { id: 'chk_5_27', activity_id: 'act_5', description: 'Entrega/Recepción chasis — Control electrico (cableado) [1.5.6.1]' },
+    { id: 'chk_5_28', activity_id: 'act_5', description: 'Entrega/Recepción chasis — Controles [1.5.6.2]' },
 
-    { id: 'chk_6_1', activity_id: 'act_6', description: 'Recepción y control de Batea ya recorrida' },
-    { id: 'chk_6_2', activity_id: 'act_6', description: 'Mecanizar agujeros para APU y DTV' },
-    { id: 'chk_6_3', activity_id: 'act_6', description: 'Soldar soportes de APU y protección' },
+    // Etapa 6: Montaje de la torre en el chasis
+    { id: 'chk_6_1', activity_id: 'act_6', description: 'Instalación de dispositivos en el chasis — Electrónica y cableado [1.6.1.1]' },
+    { id: 'chk_6_2', activity_id: 'act_6', description: 'Instalación de dispositivos en el chasis — Control [1.6.1.2]' },
+    { id: 'chk_6_3', activity_id: 'act_6', description: 'Instalación APU [1.6.2]' },
+    { id: 'chk_6_4', activity_id: 'act_6', description: 'Instalación de caja telefónica [1.6.3]' },
+    { id: 'chk_6_5', activity_id: 'act_6', description: 'Instalación de sensor contra incendio [1.6.4]' },
+    { id: 'chk_6_6', activity_id: 'act_6', description: 'Control APU + caja telefónica + sensor contra incendios [1.6.5]' },
+    { id: 'chk_6_7', activity_id: 'act_6', description: 'Montar torre en chasis [1.6.6]' },
+    { id: 'chk_6_8', activity_id: 'act_6', description: 'Control de torque [1.6.7]' },
+    { id: 'chk_6_9', activity_id: 'act_6', description: 'Instalación del TAS [1.6.8]' },
+    { id: 'chk_6_10', activity_id: 'act_6', description: 'Control ATP — Control ATP [1.6.9.1]' },
+    { id: 'chk_6_11', activity_id: 'act_6', description: 'Control ATP — Resolver novedades detectadas [1.6.9.2]' },
+    { id: 'chk_6_12', activity_id: 'act_6', description: 'Control ATP — Control ATP [1.6.9.3]' },
+    { id: 'chk_6_13', activity_id: 'act_6', description: 'Tareas finales — Ajustes finales posteriores al ATP [1.6.10.1]' },
+    { id: 'chk_6_14', activity_id: 'act_6', description: 'Tareas finales — Preparar para pintura [1.6.10.2]' },
+    { id: 'chk_6_15', activity_id: 'act_6', description: 'Pintura — Pintura tanque [1.6.11.1]' },
+    { id: 'chk_6_16', activity_id: 'act_6', description: 'Pintura — Pintura faldones [1.6.11.2]' },
+    { id: 'chk_6_17', activity_id: 'act_6', description: 'Tanque listo para certificar [1.6.12]' },
+
+    // Etapa 7: Certificación
+    { id: 'chk_7_1', activity_id: 'act_7', description: 'Coordinación con el J RC Tan 8 y Cte Br Bl I [1.7.1]' },
+    { id: 'chk_7_2', activity_id: 'act_7', description: 'Reserva del espacio aéreo [1.7.2]' },
+    { id: 'chk_7_3', activity_id: 'act_7', description: 'Transporte (Tan y Mun) — Pedido de transporte (Tan y Mun) [1.7.3.1]' },
+    { id: 'chk_7_4', activity_id: 'act_7', description: 'Transporte (Tan y Mun) — Tansporte [1.7.3.2]' },
+    { id: 'chk_7_5', activity_id: 'act_7', description: 'Sesión de tiro — Sesión de tiro (Sem 1) [1.7.4.1]' },
+    { id: 'chk_7_6', activity_id: 'act_7', description: 'Sesión de tiro — Sesión de tiro (Sem 2) [1.7.4.2]' },
+    { id: 'chk_7_7', activity_id: 'act_7', description: 'Regreso [1.7.5]' },
+    { id: 'chk_7_8', activity_id: 'act_7', description: 'Preparación de informes, documentos y puesta a disposición del TAM 2C A2 [1.7.6]' },
   ]
 
   for (const chk of INITIAL_CHECKLISTS) {
     await prisma.checklistItem.create({ data: chk })
   }
 
-  // 4. Cargar Vehículos Blindados
-  console.log('Cargando vehículos blindados...')
-  const v1 = await prisma.vehicle.create({ data: { ni: 'TAM-2C-101', origen_unit: 'RC Tan 8 (Magdalena)', status: 'in_plant' } })
-  const v2 = await prisma.vehicle.create({ data: { ni: 'TAM-2C-102', origen_unit: 'RC Tan 10 (Azul)', status: 'in_plant' } })
-  const v3 = await prisma.vehicle.create({ data: { ni: 'TAM-2C-103', origen_unit: 'RC Tan 2 (Olavarría)', status: 'in_plant' } })
-  const v4 = await prisma.vehicle.create({ data: { ni: 'TAM-2C-104', origen_unit: 'RC Tan 1 (Villaguay)', status: 'in_deposit' } })
-  const v5 = await prisma.vehicle.create({ data: { ni: 'TAM-2C-105', origen_unit: 'RC Tan 6 (Concordia)', status: 'in_service' } })
-  await prisma.vehicle.create({ data: { ni: 'TAM-2C-206', origen_unit: 'RC Tan 4 (Zapala)', status: 'in_army', army_status: 'uninspected' } })
-
-  const vehicles = [v1, v2, v3, v4, v5]
-
-  // 5. Cargar Actividades de Vehículo (Mapeo de avance de tareas)
-  console.log('Inicializando etapas de producción para vehículos...')
-  const createdVehicleActivities: any[] = []
-  for (const v of vehicles) {
-    for (const act of INITIAL_ACTIVITIES) {
-      let status = 'pending'
-      if (v.status === 'in_service') {
-        status = 'completed'
-      } else if (v.ni === 'TAM-2C-101') {
-        if (act.id === 'act_1') status = 'completed'
-        else if (act.id === 'act_2') status = 'in_progress'
-      } else if (v.ni === 'TAM-2C-102') {
-        if (act.id === 'act_1' || act.id === 'act_2') status = 'completed'
-        else if (act.id === 'act_3') status = 'pending_review'
-      }
-
-      const va = await prisma.vehicleActivity.create({
-        data: {
-          vehicle_id: v.id,
-          activity_id: act.id,
-          status: status,
-          started_at: status !== 'pending' ? new Date(Date.now() - 1000 * 60 * 60 * 24 * 5) : null,
-          completed_at: status === 'completed' || status === 'pending_review' ? new Date(Date.now() - 1000 * 60 * 60 * 24 * 2) : null,
-          verified_at: status === 'completed' ? new Date(Date.now() - 1000 * 60 * 60 * 24 * 1) : null
-        }
-      })
-      createdVehicleActivities.push(va)
-    }
-  }
-
-  const getVActId = (vehicleId: string, activityId: string) => {
-    return createdVehicleActivities.find(va => va.vehicle_id === vehicleId && va.activity_id === activityId)?.id || ""
-  }
-
-  // 6. Cargar Materiales en Catálogo de Insumos
+  // 4. Cargar Materiales en Catálogo de Insumos
   console.log('Cargando materiales en catálogo de insumos...')
   const s1 = await prisma.supply.create({ data: { name: 'Funda Térmica de Cañón', family: 'Cañón', description: 'Funda protectora térmica para cañón de 105mm' } })
   const s2 = await prisma.supply.create({ data: { name: 'Placa PCU', family: 'Torre', description: 'Placa electrónica de control de unidad de potencia de torre' } })
@@ -206,161 +257,64 @@ async function main() {
   const s5 = await prisma.supply.create({ data: { name: 'Evacuador de Gases', family: 'Cañón', description: 'Evacuador de gases para cañón L7 de 105mm' } })
   const s6 = await prisma.supply.create({ data: { name: 'Junta de Hermeticidad Frontis', family: 'Torre', description: 'Junta de hermeticidad de goma para frontis de torre' } })
 
-  // 7. Cargar Lotes de Insumos (Stock en Depósito)
+  // 5. Cargar Lotes de Insumos (Stock en Depósito)
   console.log('Cargando lotes de insumos (Stock)...')
-  const b1 = await prisma.supplyBatch.create({
+  await prisma.supplyBatch.create({
     data: {
       supply_id: s1.id,
       batch_number: 'LOTE-FT-2026',
-      serial_numbers: ['FT-SN-102', 'FT-SN-103'], // FT-SN-101 consumida
-      available_quantity: 2,
+      serial_numbers: ['FT-SN-101', 'FT-SN-102', 'FT-SN-103'],
+      available_quantity: 3,
       entry_date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30)
     }
   })
-  const b2 = await prisma.supplyBatch.create({
+  await prisma.supplyBatch.create({
     data: {
       supply_id: s2.id,
       batch_number: 'LOTE-PCU-2026',
-      serial_numbers: ['PCU-SN-503', 'PCU-SN-504'], // PCU-SN-501 y 502 consumidas
-      available_quantity: 2,
+      serial_numbers: ['PCU-SN-501', 'PCU-SN-502', 'PCU-SN-503', 'PCU-SN-504'],
+      available_quantity: 4,
       entry_date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 25)
     }
   })
-  const b3 = await prisma.supplyBatch.create({
+  await prisma.supplyBatch.create({
     data: {
       supply_id: s3.id,
       batch_number: 'LOTE-COR-2026',
-      serial_numbers: ['COR-SN-202'], // COR-SN-201 consumida
-      available_quantity: 1,
+      serial_numbers: ['COR-SN-201', 'COR-SN-202'],
+      available_quantity: 2,
       entry_date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20)
     }
   })
-  const b4 = await prisma.supplyBatch.create({
+  await prisma.supplyBatch.create({
     data: {
       supply_id: s4.id,
       batch_number: 'LOTE-PER-2026',
       serial_numbers: [],
-      available_quantity: 80, // Se usaron 20 (12 en V2, 8 en V3)
+      available_quantity: 100,
       entry_date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15)
     }
   })
-  const b5 = await prisma.supplyBatch.create({
+  await prisma.supplyBatch.create({
     data: {
       supply_id: s5.id,
       batch_number: 'LOTE-EV-2026',
-      serial_numbers: ['EV-SN-302'], // EV-SN-301 consumida
-      available_quantity: 1,
+      serial_numbers: ['EV-SN-301', 'EV-SN-302'],
+      available_quantity: 2,
       entry_date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10)
     }
   })
-  const b6 = await prisma.supplyBatch.create({
+  await prisma.supplyBatch.create({
     data: {
       supply_id: s6.id,
       batch_number: 'LOTE-JUN-2026',
       serial_numbers: [],
-      available_quantity: 16, // Se usaron 4 (2 en V1, 2 en V3)
+      available_quantity: 20,
       entry_date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5)
     }
   })
 
-  // 8. Cargar Consumos / Instalación de Materiales
-  console.log('Cargando consumos de insumos por parte de operarios en blindados...')
-  const consumptionsToSeed = [
-    {
-      vehicle_activity_id: getVActId(v1.id, 'act_1'),
-      supply_batch_id: b1.id,
-      serial_number: 'FT-SN-101',
-      quantity_used: 1,
-      operator_id: op1.id,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4)
-    },
-    {
-      vehicle_activity_id: getVActId(v1.id, 'act_1'),
-      supply_batch_id: b6.id,
-      serial_number: null,
-      quantity_used: 2,
-      operator_id: op1.id,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4)
-    },
-    {
-      vehicle_activity_id: getVActId(v1.id, 'act_2'),
-      supply_batch_id: b2.id,
-      serial_number: 'PCU-SN-501',
-      quantity_used: 1,
-      operator_id: op2.id,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3)
-    },
-    {
-      vehicle_activity_id: getVActId(v2.id, 'act_1'),
-      supply_batch_id: b4.id,
-      serial_number: null,
-      quantity_used: 12,
-      operator_id: op3.id,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3)
-    },
-    {
-      vehicle_activity_id: getVActId(v2.id, 'act_5'),
-      supply_batch_id: b3.id,
-      serial_number: 'COR-SN-201',
-      quantity_used: 1,
-      operator_id: op1.id,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2)
-    },
-    {
-      vehicle_activity_id: getVActId(v2.id, 'act_5'),
-      supply_batch_id: b2.id,
-      serial_number: 'PCU-SN-502',
-      quantity_used: 1,
-      operator_id: op3.id,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2)
-    },
-    {
-      vehicle_activity_id: getVActId(v3.id, 'act_1'),
-      supply_batch_id: b4.id,
-      serial_number: null,
-      quantity_used: 8,
-      operator_id: op2.id,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1)
-    },
-    {
-      vehicle_activity_id: getVActId(v3.id, 'act_1'),
-      supply_batch_id: b6.id,
-      serial_number: null,
-      quantity_used: 2,
-      operator_id: op2.id,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1)
-    },
-    {
-      vehicle_activity_id: getVActId(v5.id, 'act_5'),
-      supply_batch_id: b5.id,
-      serial_number: 'EV-SN-301',
-      quantity_used: 1,
-      operator_id: op3.id,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10)
-    }
-  ]
-
-  for (const c of consumptionsToSeed) {
-    await prisma.activityMaterialConsumption.create({ data: c })
-  }
-
-  // 9. Cargar Tareas Completadas del Checklist (Para dar más realismo a la vista de planta)
-  console.log('Completando algunos checklists del sistema...')
-  const chk1 = await prisma.checklistItem.findMany({ where: { activity_id: 'act_1' } })
-  const va1_act1 = getVActId(v1.id, 'act_1')
-  for (const item of chk1) {
-    await prisma.vehicleChecklistItem.create({
-      data: {
-        vehicle_activity_id: va1_act1,
-        checklist_id: item.id,
-        is_completed: true,
-        completed_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4),
-        operator_id: op1.id
-      }
-    })
-  }
-
-  // 10. Cargar Munición (Stock inicial para el módulo de Munición)
+  // 6. Cargar Munición (Stock inicial para el módulo de Munición)
   console.log('Cargando catálogo y stock de munición...')
   const ammo1 = await prisma.ammunition.create({ data: { type: 'Proyectil 105mm HE', caliber: '105mm', description: 'Proyectil de alto explosivo para cañón L7' } })
   const ammo2 = await prisma.ammunition.create({ data: { type: 'Munición 7.62mm', caliber: '7.62mm', description: 'Munición para ametralladora coaxial' } })
@@ -368,6 +322,7 @@ async function main() {
   await prisma.ammunitionBatch.create({ data: { ammunition_id: ammo2.id, batch_number: 'LOTE-762-2026', available_quantity: 2000 } })
 
   console.log('Carga de base de datos terminada con éxito.')
+  console.log('Nota: los vehículos (flota) no se cargan por seed. Se importan desde el listado real de 230 tanques.')
 }
 
 main()
