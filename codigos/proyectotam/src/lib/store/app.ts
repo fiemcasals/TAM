@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Vehicle, Supply, SupplyBatch, Activity, ChecklistItem, VehicleActivity, VehicleChecklistItem, ActivityMaterialConsumption, AuditLog, ActivityStatus, VehicleStatus } from '@/types'
-import { getVehicles, addVehicle, updateVehicleStatus, updateVehicle as updateVehicleAction, getCatalogData, toggleChecklistItemAction, updateActivityStatusAction } from '@/lib/actions/plantaActions'
+import { getVehicles, addVehicle, updateVehicleStatus, updateVehicle as updateVehicleAction, getCatalogData, toggleChecklistItemAction, updateActivityStatusAction, initVehicleActivitiesAction } from '@/lib/actions/plantaActions'
 import { getSupplies, addSupplyAction, updateSupplyAction, deleteSupplyAction, addBatchAction, updateBatchAction, deleteBatchAction, consumeMaterialAction, restoreMaterialAction, updateConsumptionAction } from '@/lib/actions/supplyActions'
 
 interface AppState {
@@ -159,7 +159,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
     },
 
     initVehicleActivities: async (vehicleId) => {
-        // handled server-side on creation, can skip
+        await initVehicleActivitiesAction(vehicleId)
         await get().fetchVehicleDetails(vehicleId)
     },
 

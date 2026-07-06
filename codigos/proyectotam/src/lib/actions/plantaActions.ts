@@ -135,6 +135,36 @@ export async function getVehicleDetails(vehicleId: string) {
   }
 }
 
+export async function initVehicleActivitiesAction(vehicleId: string) {
+  try {
+    const session = await getSession()
+    if (!session) {
+      return { success: false, message: "No autenticado." }
+    }
+
+    const activities = await prisma.activity.findMany()
+    const existing = await prisma.vehicleActivity.findMany({ where: { vehicle_id: vehicleId } })
+    const existingActivityIds = new Set(existing.map(va => va.activity_id))
+
+    const missing = activities
+      .filter(act => !existingActivityIds.has(act.id))
+      .map(act => ({
+        vehicle_id: vehicleId,
+        activity_id: act.id,
+        status: 'pending'
+      }))
+
+    if (missing.length > 0) {
+      await prisma.vehicleActivity.createMany({ data: missing })
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error(error)
+    return { success: false, message: "Error al inicializar actividades del vehículo" }
+  }
+}
+
 export async function getCatalogData() {
   try {
     const session = await getSession()
