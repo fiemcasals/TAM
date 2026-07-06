@@ -7,8 +7,9 @@ import { useAuthStore } from "@/lib/store/auth"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Clock, Box, Plus, Trash2, Maximize2, Minimize2, Pencil, Users } from "lucide-react"
+import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Clock, Box, Plus, Trash2, Maximize2, Minimize2, Pencil, Users, MessageSquareText } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { ObservationsModal } from "@/components/vehicles/ObservationsModal"
 import type { Activity } from "@/types"
 
 export default function TankDetailView({ params }: { params: Promise<{ id: string }> }) {
@@ -108,6 +109,7 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
     const [expandedActivity, setExpandedActivity] = useState<string | null>(null)
     const [isConsumeModalOpen, setIsConsumeModalOpen] = useState(false)
     const [selectedVehicleActivityId, setSelectedVehicleActivityId] = useState<string | null>(null)
+    const [isObservationsModalOpen, setIsObservationsModalOpen] = useState(false)
 
     // Modal specific state
     const [searchQuery, setSearchQuery] = useState("")
@@ -319,11 +321,7 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
         router.push('/servicio')
     }
 
-    const handleEditVehicleObservations = async () => {
-        const value = window.prompt("Observaciones del vehículo:", vehicle.observations || "")
-        if (value === null) return
-        await updateVehicle(id, { observations: value })
-    }
+    const canManageObservations = currentUser?.role === 'supervisor' || currentUser?.role === 'project_manager'
 
     return (
         <div className="p-8 max-w-5xl mx-auto space-y-6">
@@ -339,21 +337,13 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                         {isWorkMode ? <Badge className="bg-amber-600">Modo Trabajo Activo</Badge> : <Badge variant="secondary">Modo Lectura</Badge>}
                     </h1>
                     <p className="text-slate-500 mt-1">Unidad de Origen: {vehicle.origen_unit}</p>
-                    <div className="flex items-start gap-2 mt-1.5">
-                        <p className="text-sm text-slate-500">
-                            Observaciones: <span className={vehicle.observations ? "text-slate-700" : "italic text-slate-400"}>{vehicle.observations || "Sin observaciones"}</span>
-                        </p>
-                        {isSupervisor && (
-                            <button
-                                type="button"
-                                onClick={handleEditVehicleObservations}
-                                className="text-slate-400 hover:text-slate-700 shrink-0"
-                                title="Editar observaciones"
-                            >
-                                <Pencil className="h-3.5 w-3.5" />
-                            </button>
-                        )}
-                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setIsObservationsModalOpen(true)}
+                        className="flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-800 mt-1.5"
+                    >
+                        <MessageSquareText className="h-4 w-4" /> Observaciones
+                    </button>
                 </div>
                 <div className="text-right flex flex-col items-end gap-3 w-48">
                     <div className="w-full">
@@ -1119,6 +1109,16 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                         </div>
                     </div>
                 </div>
+            )}
+
+            {isObservationsModalOpen && (
+                <ObservationsModal
+                    vehicleId={vehicle.id}
+                    vehicleNi={vehicle.ni}
+                    authorName={currentUser?.name || "Desconocido"}
+                    canAdd={canManageObservations}
+                    onClose={() => setIsObservationsModalOpen(false)}
+                />
             )}
 
         </div>

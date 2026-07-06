@@ -26,11 +26,21 @@ model Vehicle {
   army_status String   @default("uninspected") // uninspected, selected, discarded
   entry_date  DateTime @default(now())
   status_updated_at DateTime @default(now()) // fecha desde la que el vehículo está en su status actual
-  observations String? // detalles/observaciones cargadas mientras está en Ejército, visibles y editables en Depósito
   assigned_operators String[] @default([])
 
-  activities  VehicleActivity[]
-  ammunition  VehicleAmmunitionAssignment[]
+  activities   VehicleActivity[]
+  ammunition   VehicleAmmunitionAssignment[]
+  observationsLog VehicleObservation[]
+}
+
+model VehicleObservation {
+  id         String   @id @default(uuid())
+  vehicle_id String
+  text       String
+  author     String?
+  created_at DateTime @default(now())
+
+  vehicle    Vehicle  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
 }
 
 model Activity {

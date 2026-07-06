@@ -81,7 +81,7 @@ export async function updateVehicleStatus(id: string, status: string) {
   }
 }
 
-export async function updateVehicle(id: string, data: { ni: string, origen_unit: string, status: string, assigned_operators?: string[], army_status?: string, observations?: string }) {
+export async function updateVehicle(id: string, data: { ni: string, origen_unit: string, status: string, assigned_operators?: string[], army_status?: string }) {
   try {
     const session = await getSession()
     if (!session || (session.role !== 'project_manager' && session.role !== 'supervisor')) {
@@ -101,14 +101,52 @@ export async function updateVehicle(id: string, data: { ni: string, origen_unit:
         status: data.status,
         status_updated_at: data.status !== existing.status ? new Date() : undefined,
         assigned_operators: data.assigned_operators,
-        army_status: data.army_status,
-        observations: data.observations
+        army_status: data.army_status
       }
     })
     return { success: true, vehicle: updated }
   } catch (error) {
     console.error(error)
     return { success: false, message: "Error al actualizar vehículo" }
+  }
+}
+
+export async function getVehicleObservations(vehicleId: string) {
+  try {
+    const session = await getSession()
+    if (!session) {
+      return { success: false, message: "No autenticado.", data: [] }
+    }
+
+    const data = await prisma.vehicleObservation.findMany({
+      where: { vehicle_id: vehicleId },
+      orderBy: { created_at: 'desc' }
+    })
+    return { success: true, data }
+  } catch (error) {
+    console.error(error)
+    return { success: false, message: "Error al cargar observaciones", data: [] }
+  }
+}
+
+export async function addVehicleObservationAction(vehicleId: string, text: string, author: string) {
+  try {
+    const session = await getSession()
+    if (!session) {
+      return { success: false, message: "No autenticado." }
+    }
+
+    if (!text.trim()) {
+      return { success: false, message: "La observación no puede estar vacía." }
+    }
+
+    const created = await prisma.vehicleObservation.create({
+      data: { vehicle_id: vehicleId, text: text.trim(), author }
+    })
+    return { success: true, data: created }
+  } catch (error) {
+    console.error(error)
+    return { success: false, message: "Error al agregar observación" }
   }
 }
 

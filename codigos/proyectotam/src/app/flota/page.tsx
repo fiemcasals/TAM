@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react"
 import { getVehicles, updateVehicle } from "@/lib/actions/plantaActions"
 import { useAuthStore } from "@/lib/store/auth"
-import { Shield, Search, Pencil } from "lucide-react"
+import { Shield, Search, MessageSquareText } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { ObservationsModal } from "@/components/vehicles/ObservationsModal"
 import type { Vehicle, ArmyStatus } from "@/types"
 
 export default function FlotaPage() {
@@ -15,6 +16,7 @@ export default function FlotaPage() {
     const [vehicles, setVehicles] = useState<Vehicle[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
+    const [observationsFor, setObservationsFor] = useState<Vehicle | null>(null)
 
     useEffect(() => {
         loadData()
@@ -40,19 +42,6 @@ export default function FlotaPage() {
         const v = vehicles.find(x => x.id === id)
         if (!v) return
         const res = await updateVehicle(id, { ni: v.ni, origen_unit: v.origen_unit, status: v.status, army_status })
-        if (res.success) {
-            loadData()
-        } else {
-            alert(res.message)
-        }
-    }
-
-    const handleEditObservations = async (id: string) => {
-        const v = vehicles.find(x => x.id === id)
-        if (!v) return
-        const value = window.prompt("Observaciones del vehículo:", v.observations || "")
-        if (value === null) return
-        const res = await updateVehicle(id, { ni: v.ni, origen_unit: v.origen_unit, status: v.status, observations: value })
         if (res.success) {
             loadData()
         } else {
@@ -134,20 +123,14 @@ export default function FlotaPage() {
                                                 <option value="discarded">Descartado (No Apto)</option>
                                             </select>
                                         </td>
-                                        <td className="px-6 py-4 max-w-xs">
-                                            <div className="flex items-start gap-2">
-                                                <p className="text-slate-600 text-xs flex-1 truncate" title={v.observations || undefined}>
-                                                    {v.observations || <span className="italic text-slate-400">Sin observaciones</span>}
-                                                </p>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleEditObservations(v.id)}
-                                                    className="text-slate-400 hover:text-slate-700 shrink-0"
-                                                    title="Editar observaciones"
-                                                >
-                                                    <Pencil className="h-3.5 w-3.5" />
-                                                </button>
-                                            </div>
+                                        <td className="px-6 py-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => setObservationsFor(v)}
+                                                className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800"
+                                            >
+                                                <MessageSquareText className="h-3.5 w-3.5" /> Observaciones
+                                            </button>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <select
@@ -171,6 +154,16 @@ export default function FlotaPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {observationsFor && (
+                <ObservationsModal
+                    vehicleId={observationsFor.id}
+                    vehicleNi={observationsFor.ni}
+                    authorName={currentUser?.name || "Desconocido"}
+                    canAdd={isManager}
+                    onClose={() => setObservationsFor(null)}
+                />
+            )}
         </div>
     )
 }

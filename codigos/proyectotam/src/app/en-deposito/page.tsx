@@ -7,9 +7,11 @@ import { useAuthStore } from "@/lib/store/auth"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Search, Archive, Pencil } from "lucide-react"
+import { Search, Archive, MessageSquareText } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { ObservationsModal } from "@/components/vehicles/ObservationsModal"
+import type { Vehicle } from "@/types"
 
 export default function EnDepositoPage() {
     const { vehicles, updateVehicle } = useAppStore()
@@ -17,6 +19,7 @@ export default function EnDepositoPage() {
     const canManage = currentUser?.role === 'project_manager' || currentUser?.role === 'supervisor'
 
     const [searchTerm, setSearchTerm] = useState("")
+    const [observationsFor, setObservationsFor] = useState<Vehicle | null>(null)
     const tanksInDeposit = vehicles
         .filter(v => v.status === 'in_deposit')
         .filter(v =>
@@ -24,14 +27,6 @@ export default function EnDepositoPage() {
             v.origen_unit.toLowerCase().includes(searchTerm.toLowerCase())
         )
         .sort((a, b) => new Date(b.status_updated_at || b.entry_date).getTime() - new Date(a.status_updated_at || a.entry_date).getTime())
-
-    const handleEditObservations = async (id: string) => {
-        const v = vehicles.find(x => x.id === id)
-        if (!v) return
-        const value = window.prompt("Observaciones del vehículo:", v.observations || "")
-        if (value === null) return
-        await updateVehicle(id, { observations: value })
-    }
 
     const handleSendToPlant = async (id: string) => {
         if (!confirm("¿Desea ingresar este vehículo a la línea de Planta?")) return
@@ -87,22 +82,14 @@ export default function EnDepositoPage() {
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-slate-600">{new Date(tank.status_updated_at || tank.entry_date).toLocaleString()}</TableCell>
-                                    <TableCell className="max-w-xs">
-                                        <div className="flex items-start gap-2">
-                                            <p className="text-slate-600 text-xs flex-1 truncate" title={tank.observations || undefined}>
-                                                {tank.observations || <span className="italic text-slate-400">Sin observaciones</span>}
-                                            </p>
-                                            {canManage && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleEditObservations(tank.id)}
-                                                    className="text-slate-400 hover:text-slate-700 shrink-0"
-                                                    title="Editar observaciones"
-                                                >
-                                                    <Pencil className="h-3.5 w-3.5" />
-                                                </button>
-                                            )}
-                                        </div>
+                                    <TableCell>
+                                        <button
+                                            type="button"
+                                            onClick={() => setObservationsFor(tank)}
+                                            className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800"
+                                        >
+                                            <MessageSquareText className="h-3.5 w-3.5" /> Observaciones
+                                        </button>
                                     </TableCell>
                                     <TableCell className="text-right pr-6">
                                         <div className="flex items-center justify-end gap-2">
@@ -137,6 +124,16 @@ export default function EnDepositoPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            {observationsFor && (
+                <ObservationsModal
+                    vehicleId={observationsFor.id}
+                    vehicleNi={observationsFor.ni}
+                    authorName={currentUser?.name || "Desconocido"}
+                    canAdd={canManage}
+                    onClose={() => setObservationsFor(null)}
+                />
+            )}
         </div>
     )
 }

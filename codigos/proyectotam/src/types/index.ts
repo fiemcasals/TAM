@@ -22,8 +22,15 @@ export interface Vehicle {
     army_status?: ArmyStatus
     entry_date: string
     status_updated_at?: string
-    observations?: string
     assigned_operators?: string[]
+}
+
+export interface VehicleObservation {
+    id: string
+    vehicle_id: string
+    text: string
+    author?: string
+    created_at: string
 }
 
 export interface Activity {
