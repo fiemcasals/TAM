@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Vehicle, Supply, SupplyBatch, Activity, ChecklistItem, VehicleActivity, VehicleChecklistItem, ActivityMaterialConsumption, AuditLog, ActivityStatus, VehicleStatus } from '@/types'
-import { getVehicles, addVehicle, updateVehicleStatus, updateVehicle as updateVehicleAction, deleteVehicle, getCatalogData, toggleChecklistItemAction, updateActivityStatusAction } from '@/lib/actions/plantaActions'
+import { getVehicles, addVehicle, updateVehicleStatus, updateVehicle as updateVehicleAction, getCatalogData, toggleChecklistItemAction, updateActivityStatusAction } from '@/lib/actions/plantaActions'
 import { getSupplies, addSupplyAction, updateSupplyAction, deleteSupplyAction, addBatchAction, updateBatchAction, deleteBatchAction, consumeMaterialAction, restoreMaterialAction, updateConsumptionAction } from '@/lib/actions/supplyActions'
 
 interface AppState {
@@ -24,7 +24,6 @@ interface AppState {
     addVehicle: (vehicleDTO: Omit<Vehicle, 'id' | 'entry_date'>) => Promise<void>
     updateVehicleStatus: (id: string, status: string) => Promise<void>
     updateVehicle: (id: string, data: Partial<Vehicle>) => Promise<void>
-    deleteVehicle: (id: string) => Promise<void>
     assignOperatorsToVehicle: (id: string, operatorIds: string[]) => Promise<void>
 
     // Stock Actions
@@ -109,11 +108,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
             assigned_operators: data.assigned_operators ?? existing.assigned_operators,
             army_status: data.army_status ?? existing.army_status
         })
-        await get().fetchData()
-    },
-
-    deleteVehicle: async (id) => {
-        await deleteVehicle(id)
         await get().fetchData()
     },
 

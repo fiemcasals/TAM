@@ -14,7 +14,7 @@ import type { VehicleStatus, Vehicle, SupplyBatch } from "@/types"
 export default function DepositoPage() {
     const {
         vehicles, supplies, supplyBatches,
-        addVehicle, updateVehicleStatus, updateVehicle, deleteVehicle,
+        addVehicle, updateVehicleStatus, updateVehicle,
         updateSupply, updateBatch, deleteBatch
     } = useAppStore()
 
@@ -143,13 +143,6 @@ export default function DepositoPage() {
 
         setIsStockEditModalOpen(false)
         setStockToEdit(null)
-    }
-
-    const handleDeleteVehicle = async (id: string, ni: string) => {
-        if (confirm(`¿Está seguro de que desea eliminar el tanque NI ${ni}?`)) {
-            await deleteVehicle(id)
-            alert(`El tanque NI ${ni} ha sido borrado correctamente del sistema.`)
-        }
     }
 
     const handleDeleteBatch = async (id: string, name: string, batchNumber?: string) => {
@@ -295,9 +288,6 @@ export default function DepositoPage() {
                                                         <div className="flex items-center justify-end gap-1">
                                                             <Button variant="ghost" size="icon" onClick={() => { setVehicleToEdit(vehicle); setIsVehicleEditModalOpen(true); }} className="text-slate-500 hover:bg-slate-100 hover:text-slate-700">
                                                                 <Edit2 className="h-4 w-4" />
-                                                            </Button>
-                                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteVehicle(vehicle.id, vehicle.ni)} className="text-red-500 hover:bg-red-50 hover:text-red-700">
-                                                                <Trash2 className="h-4 w-4" />
                                                             </Button>
                                                         </div>
                                                     ) : <span className="text-xs text-slate-400">Solo Lectura</span>}

@@ -97,20 +97,6 @@ export async function updateVehicle(id: string, data: { ni: string, origen_unit:
   }
 }
 
-export async function deleteVehicle(id: string) {
-  try {
-    const session = await getSession()
-    if (!session || session.role !== 'project_manager') {
-      return { success: false, message: "No autorizado. Se requieren permisos de Project Manager." }
-    }
-
-    await prisma.vehicle.delete({ where: { id } })
-    return { success: true }
-  } catch (e) {
-    return { success: false, message: "Error al eliminar vehículo" }
-  }
-}
-
 // PLANTA / ACTIVITIES
 export async function getVehicleDetails(vehicleId: string) {
   try {

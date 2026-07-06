@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getVehicles, updateVehicle, deleteVehicle } from "@/lib/actions/plantaActions"
+import { getVehicles, updateVehicle } from "@/lib/actions/plantaActions"
 import { useAuthStore } from "@/lib/store/auth"
-import { Trash2, Shield, Search } from "lucide-react"
+import { Shield, Search } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -55,16 +55,6 @@ export default function FlotaPage() {
         const res = await updateVehicle(id, { ni: v.ni, origen_unit: v.origen_unit, status: 'in_deposit' })
         if (res.success) {
             alert("El vehículo ha sido enviado al depósito de la planta.")
-            loadData()
-        } else {
-            alert(res.message)
-        }
-    }
-
-    const handleDelete = async (id: string) => {
-        if (!confirm("¿Eliminar este registro de forma permanente?")) return
-        const res = await deleteVehicle(id)
-        if (res.success) {
             loadData()
         } else {
             alert(res.message)
@@ -132,7 +122,7 @@ export default function FlotaPage() {
                                                 <option value="discarded">Descartado (No Apto)</option>
                                             </select>
                                         </td>
-                                        <td className="px-6 py-4 text-right flex justify-end gap-2">
+                                        <td className="px-6 py-4 text-right">
                                             <Button
                                                 size="sm"
                                                 variant="outline"
@@ -142,9 +132,6 @@ export default function FlotaPage() {
                                                 title={v.army_status !== 'selected' ? 'Debe estar Seleccionado para ingresar a planta' : 'Ingresar a Planta'}
                                             >
                                                 Mover a Planta
-                                            </Button>
-                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(v.id)}>
-                                                <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </td>
                                     </tr>
