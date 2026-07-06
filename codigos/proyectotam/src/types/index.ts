@@ -66,6 +66,7 @@ export interface VehicleActivity {
     started_at?: string
     completed_at?: string
     verified_at?: string
+    additional_operators?: string[]
 }
 
 export interface VehicleChecklistItem {

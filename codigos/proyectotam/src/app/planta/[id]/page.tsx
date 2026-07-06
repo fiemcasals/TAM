@@ -35,7 +35,8 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
         removeMaterialConsumption,
         updateMaterialConsumption,
         updateActivityStatus,
-        assignOperatorsToVehicle
+        assignOperatorsToVehicle,
+        addActivityParticipant
     } = useAppStore()
 
     const currentUser = useAuthStore(state => state.currentUser)
@@ -92,6 +93,12 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
             }
         })
 
+        // Operators added manually as participants
+        const vAct = vehicleActivities.find(va => va.id === vActId)
+        vAct?.additional_operators?.forEach(operatorId => {
+            participants.add(getOperatorName(operatorId))
+        })
+
         return Array.from(participants)
     }
 
@@ -109,6 +116,10 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
     // Assign Operators state
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
     const [selectedOperators, setSelectedOperators] = useState<string[]>([])
+
+    // Add participant to activity state
+    const [addingParticipantFor, setAddingParticipantFor] = useState<string | null>(null)
+    const [newParticipantId, setNewParticipantId] = useState("")
 
     // Inline editing consumption state
     const [editingConsumptionId, setEditingConsumptionId] = useState<string | null>(null)
@@ -167,6 +178,13 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
     const handleToggleChecklist = (vActId: string, actId: string, checkId: string, actionType: 'start' | 'pause' | 'resume' | 'complete' | 'reset') => {
         if (!currentUser) return
         toggleChecklistItem(id, actId, checkId, currentUser.name, actionType)
+    }
+
+    const handleAddParticipant = async (vehicleActivityId: string) => {
+        if (!newParticipantId) return
+        await addActivityParticipant(vehicleActivityId, newParticipantId)
+        setAddingParticipantFor(null)
+        setNewParticipantId("")
     }
 
     const formatElapsed = (totalSeconds: number) => {
@@ -697,7 +715,48 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                             </div>
                                             <div className="space-y-3">
                                                 <div>
-                                                    <span className="text-xs font-semibold text-slate-400 block mb-1">OPERARIOS INVOLUCRADOS</span>
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <span className="text-xs font-semibold text-slate-400">OPERARIOS INVOLUCRADOS</span>
+                                                        {isWorkMode && addingParticipantFor !== vAct.id && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { setAddingParticipantFor(vAct.id); setNewParticipantId("") }}
+                                                                className="text-blue-600 hover:text-blue-800 text-xs font-semibold flex items-center gap-0.5"
+                                                                title="Agregar operario"
+                                                            >
+                                                                <Plus className="h-3.5 w-3.5" /> Agregar
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    {addingParticipantFor === vAct.id && (
+                                                        <div className="flex items-center gap-1.5 mb-2">
+                                                            <select
+                                                                className="text-xs border border-slate-200 rounded px-2 py-1 flex-1 bg-white"
+                                                                value={newParticipantId}
+                                                                onChange={(e) => setNewParticipantId(e.target.value)}
+                                                            >
+                                                                <option value="">Seleccionar operario...</option>
+                                                                {users.map(u => (
+                                                                    <option key={u.id} value={u.id}>{u.name} {u.lastName || ""}</option>
+                                                                ))}
+                                                            </select>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleAddParticipant(vAct.id)}
+                                                                disabled={!newParticipantId}
+                                                                className="text-green-700 hover:text-green-900 text-xs font-bold px-2 py-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                                                            >
+                                                                OK
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setAddingParticipantFor(null)}
+                                                                className="text-slate-400 hover:text-slate-700 text-xs px-1"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                     {getParticipantsForActivity(vAct.id).length > 0 ? (
                                                         <div className="flex flex-wrap gap-1.5">
                                                             {getParticipantsForActivity(vAct.id).map(name => (

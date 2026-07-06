@@ -259,6 +259,33 @@ export async function toggleChecklistItemAction(vehicleActivityId: string, check
   }
 }
 
+export async function addActivityParticipantAction(vehicleActivityId: string, operatorId: string) {
+  try {
+    const session = await getSession()
+    if (!session) {
+      return { success: false, message: "No autenticado." }
+    }
+
+    const vAct = await prisma.vehicleActivity.findUnique({ where: { id: vehicleActivityId } })
+    if (!vAct) {
+      return { success: false, message: "Actividad no encontrada." }
+    }
+
+    if (vAct.additional_operators.includes(operatorId)) {
+      return { success: true }
+    }
+
+    await prisma.vehicleActivity.update({
+      where: { id: vehicleActivityId },
+      data: { additional_operators: { push: operatorId } }
+    })
+    return { success: true }
+  } catch (error) {
+    console.error(error)
+    return { success: false, message: "Error al agregar participante" }
+  }
+}
+
 export async function updateActivityStatusAction(vehicleActivityId: string, status: string, userId: string, reason?: string) {
   try {
     const session = await getSession()

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Vehicle, Supply, SupplyBatch, Activity, ChecklistItem, VehicleActivity, VehicleChecklistItem, ActivityMaterialConsumption, AuditLog, ActivityStatus, VehicleStatus } from '@/types'
-import { getVehicles, addVehicle, updateVehicleStatus, updateVehicle as updateVehicleAction, getCatalogData, toggleChecklistItemAction, updateActivityStatusAction, initVehicleActivitiesAction } from '@/lib/actions/plantaActions'
+import { getVehicles, addVehicle, updateVehicleStatus, updateVehicle as updateVehicleAction, getCatalogData, toggleChecklistItemAction, updateActivityStatusAction, initVehicleActivitiesAction, addActivityParticipantAction } from '@/lib/actions/plantaActions'
 import { getSupplies, addSupplyAction, updateSupplyAction, deleteSupplyAction, addBatchAction, updateBatchAction, deleteBatchAction, consumeMaterialAction, restoreMaterialAction, updateConsumptionAction } from '@/lib/actions/supplyActions'
 
 interface AppState {
@@ -42,6 +42,7 @@ interface AppState {
     removeMaterialConsumption: (consumptionId: string, userId: string) => Promise<void>
     updateMaterialConsumption: (consumptionId: string, newQuantity: number) => Promise<{ success: boolean; message?: string }>
     updateActivityStatus: (vehicleActivityId: string, status: ActivityStatus, userId: string, reason?: string) => Promise<void>
+    addActivityParticipant: (vehicleActivityId: string, operatorId: string) => Promise<void>
 }
 
 export const useAppStore = create<AppState>()((set, get) => ({
@@ -217,6 +218,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
     updateActivityStatus: async (vehicleActivityId, status, userId, reason) => {
         await updateActivityStatusAction(vehicleActivityId, status, userId, reason)
+        const vAct = get().vehicleActivities.find(va => va.id === vehicleActivityId)
+        if (vAct) await get().fetchVehicleDetails(vAct.vehicle_id)
+    },
+
+    addActivityParticipant: async (vehicleActivityId, operatorId) => {
+        await addActivityParticipantAction(vehicleActivityId, operatorId)
         const vAct = get().vehicleActivities.find(va => va.id === vehicleActivityId)
         if (vAct) await get().fetchVehicleDetails(vAct.vehicle_id)
     }

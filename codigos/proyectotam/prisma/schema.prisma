@@ -83,6 +83,7 @@ model VehicleActivity {
   started_at    DateTime?
   completed_at  DateTime?
   verified_at   DateTime?
+  additional_operators String[] @default([]) // operarios agregados manualmente como participantes de la etapa
 
   vehicle       Vehicle  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
   activity      Activity @relation(fields: [activity_id], references: [id], onDelete: Cascade)
