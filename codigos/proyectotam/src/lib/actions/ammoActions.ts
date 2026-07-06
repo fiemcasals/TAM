@@ -108,8 +108,8 @@ export async function assignAmmunition(vehicleId: string, batchId: string, quant
       }
 
       const vehicle = await tx.vehicle.findUnique({ where: { id: vehicleId } })
-      if (!vehicle || vehicle.status !== 'in_service') {
-         throw new Error("El vehículo debe estar En Servicio para recibir munición")
+      if (!vehicle || vehicle.status !== 'in_plant') {
+         throw new Error("El vehículo debe estar En Planta para recibir munición")
       }
 
       await tx.ammunitionBatch.update({
