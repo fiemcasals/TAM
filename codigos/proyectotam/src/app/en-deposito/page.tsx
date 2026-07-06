@@ -28,7 +28,7 @@ export default function EnDepositoPage() {
     const handleEditObservations = async (id: string) => {
         const v = vehicles.find(x => x.id === id)
         if (!v) return
-        const value = window.prompt("Detalles / observaciones del vehículo:", v.observations || "")
+        const value = window.prompt("Observaciones del vehículo:", v.observations || "")
         if (value === null) return
         await updateVehicle(id, { observations: value })
     }
@@ -73,7 +73,7 @@ export default function EnDepositoPage() {
                                 <TableHead className="pl-6">Identificación (NI)</TableHead>
                                 <TableHead>Unidad de Origen</TableHead>
                                 <TableHead>Fecha de Ingreso a Depósito</TableHead>
-                                <TableHead>Detalles</TableHead>
+                                <TableHead>Observaciones</TableHead>
                                 <TableHead className="text-right pr-6">Acción</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -90,14 +90,14 @@ export default function EnDepositoPage() {
                                     <TableCell className="max-w-xs">
                                         <div className="flex items-start gap-2">
                                             <p className="text-slate-600 text-xs flex-1 truncate" title={tank.observations || undefined}>
-                                                {tank.observations || <span className="italic text-slate-400">Sin detalles</span>}
+                                                {tank.observations || <span className="italic text-slate-400">Sin observaciones</span>}
                                             </p>
                                             {canManage && (
                                                 <button
                                                     type="button"
                                                     onClick={() => handleEditObservations(tank.id)}
                                                     className="text-slate-400 hover:text-slate-700 shrink-0"
-                                                    title="Editar detalles"
+                                                    title="Editar observaciones"
                                                 >
                                                     <Pencil className="h-3.5 w-3.5" />
                                                 </button>

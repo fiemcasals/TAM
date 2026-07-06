@@ -319,6 +319,12 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
         router.push('/servicio')
     }
 
+    const handleEditVehicleObservations = async () => {
+        const value = window.prompt("Observaciones del vehículo:", vehicle.observations || "")
+        if (value === null) return
+        await updateVehicle(id, { observations: value })
+    }
+
     return (
         <div className="p-8 max-w-5xl mx-auto space-y-6">
             {/* Header section with back button and tank info */}
@@ -333,6 +339,21 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                         {isWorkMode ? <Badge className="bg-amber-600">Modo Trabajo Activo</Badge> : <Badge variant="secondary">Modo Lectura</Badge>}
                     </h1>
                     <p className="text-slate-500 mt-1">Unidad de Origen: {vehicle.origen_unit}</p>
+                    <div className="flex items-start gap-2 mt-1.5">
+                        <p className="text-sm text-slate-500">
+                            Observaciones: <span className={vehicle.observations ? "text-slate-700" : "italic text-slate-400"}>{vehicle.observations || "Sin observaciones"}</span>
+                        </p>
+                        {isSupervisor && (
+                            <button
+                                type="button"
+                                onClick={handleEditVehicleObservations}
+                                className="text-slate-400 hover:text-slate-700 shrink-0"
+                                title="Editar observaciones"
+                            >
+                                <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                        )}
+                    </div>
                 </div>
                 <div className="text-right flex flex-col items-end gap-3 w-48">
                     <div className="w-full">
