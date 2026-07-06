@@ -32,9 +32,9 @@ export default function MunicionPage() {
             ])
             if (ammoRes.success) setAmmoList(ammoRes.data as Ammunition[])
             if (vRes.success) {
-                // Only vehicles in service can receive ammo
-                const inService = (vRes.vehicles as Vehicle[]).filter(v => v.status === 'in_service')
-                setVehicles(inService)
+                // Only vehicles in plant (Línea de producción) can receive ammo
+                const inPlant = (vRes.vehicles as Vehicle[]).filter(v => v.status === 'in_plant')
+                setVehicles(inPlant)
             }
         } catch (error) {
             console.error(error)
@@ -193,7 +193,7 @@ export default function MunicionPage() {
                         <CardContent className="pt-4">
                             <form onSubmit={handleAssign} className="space-y-4">
                                 <div>
-                                    <label className="text-xs font-semibold text-slate-700">Vehículo Destino (En Servicio)</label>
+                                    <label className="text-xs font-semibold text-slate-700">Vehículo Destino (En planta)</label>
                                     <select name="vehicle_id" required className="w-full h-10 mt-1 px-3 bg-white border border-slate-300 rounded-md text-sm">
                                         <option value="">Seleccione vehículo...</option>
                                         {vehicles.map(v => (
