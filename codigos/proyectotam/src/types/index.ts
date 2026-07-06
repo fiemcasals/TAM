@@ -72,9 +72,12 @@ export interface VehicleChecklistItem {
     id: string
     vehicle_activity_id: string
     checklist_id: string
+    status: 'pending' | 'in_progress' | 'paused' | 'completed'
     is_completed: boolean
     started_at?: string
     completed_at?: string
+    running_since?: string
+    accumulated_seconds: number
     operator_id?: string
 }
 

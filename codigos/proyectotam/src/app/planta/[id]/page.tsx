@@ -114,6 +114,13 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
     const [editingConsumptionId, setEditingConsumptionId] = useState<string | null>(null)
     const [editingQuantity, setEditingQuantity] = useState<number>(0)
 
+    // Live ticking clock, used to show running task counters in real time
+    const [now, setNow] = useState(() => Date.now())
+    useEffect(() => {
+        const interval = setInterval(() => setNow(Date.now()), 1000)
+        return () => clearInterval(interval)
+    }, [])
+
     const uniqueActivityIds = new Set<string>()
     const vActivities = vehicleActivities
         .filter(va => va.vehicle_id === id)
@@ -157,9 +164,25 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
     const getActivityDetails = (actId: string) => activities.find(a => a.id === actId)!
     const getChecklistsForActivity = (actId: string) => checklistItems.filter(c => c.activity_id === actId)
 
-    const handleToggleChecklist = (vActId: string, actId: string, checkId: string, actionType: 'start' | 'complete' | 'reset') => {
+    const handleToggleChecklist = (vActId: string, actId: string, checkId: string, actionType: 'start' | 'pause' | 'resume' | 'complete' | 'reset') => {
         if (!currentUser) return
         toggleChecklistItem(id, actId, checkId, currentUser.name, actionType)
+    }
+
+    const formatElapsed = (totalSeconds: number) => {
+        const h = Math.floor(totalSeconds / 3600)
+        const m = Math.floor((totalSeconds % 3600) / 60)
+        const s = totalSeconds % 60
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+    }
+
+    const getChecklistElapsedSeconds = (vci?: { status: string, accumulated_seconds: number, running_since?: string }) => {
+        if (!vci) return 0
+        if (vci.status === 'in_progress' && vci.running_since) {
+            const running = Math.max(0, Math.floor((now - new Date(vci.running_since).getTime()) / 1000))
+            return vci.accumulated_seconds + running
+        }
+        return vci.accumulated_seconds
     }
 
     const handleConsumeSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -406,6 +429,7 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                                     const vciLog = vehicleChecklistItems.find(vci => vci.checklist_id === check.id && vci.vehicle_activity_id === vAct.id)
                                                     const isChecked = !!vciLog?.is_completed
                                                     const isDisabled = !isOperator || vAct.status === 'completed' || vAct.status === 'pending_review'
+                                                    const elapsedSeconds = getChecklistElapsedSeconds(vciLog)
 
                                                     return (
                                                         <div key={check.id} className="flex flex-col gap-2 p-3 hover:bg-slate-50 rounded-lg group transition-colors border border-slate-100">
@@ -414,7 +438,17 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                                                     {check.description}
                                                                 </p>
                                                                 <div className="flex items-center gap-2 shrink-0">
-                                                                    {!vciLog ? (
+                                                                    {(!vciLog || vciLog.status === 'in_progress') && (
+                                                                        <span className={`font-mono text-xs px-2 py-1 rounded ${vciLog?.status === 'in_progress' ? 'bg-amber-100 text-amber-800' : 'text-slate-300'}`}>
+                                                                            {formatElapsed(elapsedSeconds)}
+                                                                        </span>
+                                                                    )}
+                                                                    {vciLog?.status === 'paused' && (
+                                                                        <span className="font-mono text-xs px-2 py-1 rounded bg-slate-200 text-slate-600">
+                                                                            {formatElapsed(elapsedSeconds)} (en pausa)
+                                                                        </span>
+                                                                    )}
+                                                                    {!vciLog && (
                                                                         <Button
                                                                             size="sm"
                                                                             variant="outline"
@@ -426,16 +460,40 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                                                         >
                                                                             Iniciar
                                                                         </Button>
-                                                                    ) : !vciLog.is_completed ? (
+                                                                    )}
+                                                                    {vciLog?.status === 'in_progress' && (
                                                                         <Button
                                                                             size="sm"
-                                                                            className="bg-green-600 hover:bg-green-700 text-white"
+                                                                            variant="outline"
+                                                                            className="text-amber-700 border-amber-200 hover:bg-amber-50"
                                                                             disabled={isDisabled}
-                                                                            onClick={() => handleToggleChecklist(vAct.id, activity.id, check.id, 'complete')}
+                                                                            onClick={() => handleToggleChecklist(vAct.id, activity.id, check.id, 'pause')}
                                                                         >
-                                                                            Finalizar
+                                                                            Detener
                                                                         </Button>
-                                                                    ) : (
+                                                                    )}
+                                                                    {vciLog?.status === 'paused' && (
+                                                                        <>
+                                                                            <Button
+                                                                                size="sm"
+                                                                                variant="outline"
+                                                                                className="text-blue-700 border-blue-200 hover:bg-blue-50"
+                                                                                disabled={isDisabled}
+                                                                                onClick={() => handleToggleChecklist(vAct.id, activity.id, check.id, 'resume')}
+                                                                            >
+                                                                                Retomar
+                                                                            </Button>
+                                                                            <Button
+                                                                                size="sm"
+                                                                                className="bg-green-600 hover:bg-green-700 text-white"
+                                                                                disabled={isDisabled}
+                                                                                onClick={() => handleToggleChecklist(vAct.id, activity.id, check.id, 'complete')}
+                                                                            >
+                                                                                Finalizar
+                                                                            </Button>
+                                                                        </>
+                                                                    )}
+                                                                    {vciLog?.status === 'completed' && (
                                                                         <Button
                                                                             size="sm"
                                                                             variant="ghost"
@@ -453,6 +511,9 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                                                     <div className="flex items-center gap-1.5">
                                                                         <Clock className="h-3.5 w-3.5" />
                                                                         Inicio: {new Date(vciLog.started_at!).toLocaleString()} por <span className="font-bold text-slate-700">{getOperatorName(vciLog.operator_id)}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        Tiempo activo: <span className="font-semibold text-slate-700">{formatElapsed(elapsedSeconds)}</span>
                                                                     </div>
                                                                     {vciLog.is_completed && (
                                                                         <div className="flex items-center gap-1.5">

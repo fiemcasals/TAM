@@ -180,7 +180,7 @@ export async function getCatalogData() {
   }
 }
 
-export async function toggleChecklistItemAction(vehicleActivityId: string, checklistId: string, operatorId: string, actionType: 'start' | 'complete' | 'reset') {
+export async function toggleChecklistItemAction(vehicleActivityId: string, checklistId: string, operatorId: string, actionType: 'start' | 'pause' | 'resume' | 'complete' | 'reset') {
   try {
     const session = await getSession()
     if (!session || (session.role !== 'operator' && session.role !== 'project_manager')) {
@@ -191,23 +191,21 @@ export async function toggleChecklistItemAction(vehicleActivityId: string, check
       where: { vehicle_activity_id: vehicleActivityId, checklist_id: checklistId }
     })
 
+    const elapsedSince = (since: Date) => Math.max(0, Math.floor((Date.now() - since.getTime()) / 1000))
+
     if (actionType === 'reset') {
       if (existing) await prisma.vehicleChecklistItem.delete({ where: { id: existing.id } })
-    } else if (actionType === 'complete') {
-      if (existing) {
-        await prisma.vehicleChecklistItem.update({
-          where: { id: existing.id },
-          data: { is_completed: true, completed_at: new Date() }
-        })
-      }
     } else if (actionType === 'start') {
       if (!existing) {
         await prisma.vehicleChecklistItem.create({
           data: {
             vehicle_activity_id: vehicleActivityId,
             checklist_id: checklistId,
+            status: 'in_progress',
             is_completed: false,
             started_at: new Date(),
+            running_since: new Date(),
+            accumulated_seconds: 0,
             operator_id: operatorId
           }
         })
@@ -220,6 +218,38 @@ export async function toggleChecklistItemAction(vehicleActivityId: string, check
             data: { status: 'in_progress', started_at: new Date() }
           })
         }
+      }
+    } else if (actionType === 'pause') {
+      if (existing && existing.status === 'in_progress' && existing.running_since) {
+        await prisma.vehicleChecklistItem.update({
+          where: { id: existing.id },
+          data: {
+            status: 'paused',
+            running_since: null,
+            accumulated_seconds: existing.accumulated_seconds + elapsedSince(existing.running_since)
+          }
+        })
+      }
+    } else if (actionType === 'resume') {
+      if (existing && existing.status === 'paused') {
+        await prisma.vehicleChecklistItem.update({
+          where: { id: existing.id },
+          data: { status: 'in_progress', running_since: new Date() }
+        })
+      }
+    } else if (actionType === 'complete') {
+      if (existing && (existing.status === 'in_progress' || existing.status === 'paused')) {
+        const extra = existing.status === 'in_progress' && existing.running_since ? elapsedSince(existing.running_since) : 0
+        await prisma.vehicleChecklistItem.update({
+          where: { id: existing.id },
+          data: {
+            status: 'completed',
+            is_completed: true,
+            completed_at: new Date(),
+            running_since: null,
+            accumulated_seconds: existing.accumulated_seconds + extra
+          }
+        })
       }
     }
     return { success: true }

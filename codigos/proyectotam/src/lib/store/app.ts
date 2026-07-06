@@ -37,7 +37,7 @@ interface AppState {
 
     // Planta Actions
     initVehicleActivities: (vehicleId: string) => Promise<void>
-    toggleChecklistItem: (vehicleId: string, activityId: string, checklistId: string, operatorId: string, actionType: 'start' | 'complete' | 'reset') => Promise<void>
+    toggleChecklistItem: (vehicleId: string, activityId: string, checklistId: string, operatorId: string, actionType: 'start' | 'pause' | 'resume' | 'complete' | 'reset') => Promise<void>
     consumeMaterialForActivity: (vehicleActivityId: string, batchId: string, quantity: number, operatorId: string, serialNumber?: string) => Promise<boolean>
     removeMaterialConsumption: (consumptionId: string, userId: string) => Promise<void>
     updateMaterialConsumption: (consumptionId: string, newQuantity: number) => Promise<{ success: boolean; message?: string }>

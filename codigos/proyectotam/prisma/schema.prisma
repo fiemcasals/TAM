@@ -95,9 +95,12 @@ model VehicleChecklistItem {
   id                  String   @id @default(uuid())
   vehicle_activity_id String
   checklist_id        String
+  status              String   @default("pending") // pending, in_progress, paused, completed
   is_completed        Boolean  @default(false)
   started_at          DateTime?
   completed_at        DateTime?
+  running_since       DateTime? // desde cuándo corre el segmento actual (null si está pausada/completada/pendiente)
+  accumulated_seconds Int      @default(0) // tiempo activo acumulado de segmentos previos ya detenidos
   operator_id         String?
 
   vehicleActivity     VehicleActivity @relation(fields: [vehicle_activity_id], references: [id], onDelete: Cascade)
