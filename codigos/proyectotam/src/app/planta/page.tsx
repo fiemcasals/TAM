@@ -41,8 +41,7 @@ export default function PlantaPage() {
         .filter(v => v.status === 'in_plant')
         .filter(v => {
             if (!isOperator) return true
-            if (!v.assigned_operators || v.assigned_operators.length === 0) return true
-            return v.assigned_operators.includes(currentUser.id)
+            return !!v.assigned_operators && v.assigned_operators.includes(currentUser.id)
         })
         .filter(v =>
             v.ni.toLowerCase().includes(searchTerm.toLowerCase()) ||

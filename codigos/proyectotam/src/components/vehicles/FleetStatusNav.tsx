@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useAuthStore } from "@/lib/store/auth"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Activity, Archive, Wrench, Shield } from "lucide-react"
 import type { Vehicle } from "@/types"
@@ -12,6 +13,8 @@ interface FleetStatusNavProps {
 
 export function FleetStatusNav({ vehicles }: FleetStatusNavProps) {
     const pathname = usePathname()
+    const currentUser = useAuthStore(state => state.currentUser)
+    const canSeeArmy = currentUser?.role === 'project_manager'
 
     const tankStats = {
         in_service: vehicles.filter(v => v.status === 'in_service').length,
@@ -20,12 +23,14 @@ export function FleetStatusNav({ vehicles }: FleetStatusNavProps) {
         in_army: vehicles.filter(v => v.status === 'in_army').length,
     }
 
-    const cards = [
+    const allCards = [
         { href: "/servicio", active: pathname.startsWith("/servicio"), label: "En Servicio", count: tankStats.in_service, hint: "Unidades operativas ➔", icon: Activity, color: "blue" },
         { href: "/planta", active: pathname.startsWith("/planta"), label: "En Planta", count: tankStats.in_plant, hint: "En proceso de repotenciación ➔", icon: Wrench, color: "amber" },
         { href: "/en-deposito", active: pathname.startsWith("/en-deposito"), label: "En Depósito", count: tankStats.in_deposit, hint: "A la espera de ingreso ➔", icon: Archive, color: "red" },
         { href: "/flota", active: pathname.startsWith("/flota"), label: "En Ejército", count: tankStats.in_army, hint: "Previo a modernización ➔", icon: Shield, color: "green" },
     ] as const
+
+    const cards = canSeeArmy ? allCards : allCards.filter(c => c.href !== "/flota")
 
     const colorClasses: Record<string, { ring: string, border: string, bg: string, title: string, iconColor: string, value: string, hint: string }> = {
         blue: { ring: "focus:ring-blue-500", border: "hover:border-blue-500", bg: "bg-blue-50/50", title: "text-blue-700", iconColor: "text-blue-600", value: "text-blue-900", hint: "text-blue-600" },
@@ -35,7 +40,7 @@ export function FleetStatusNav({ vehicles }: FleetStatusNavProps) {
     }
 
     return (
-        <div className="grid gap-6 md:grid-cols-4">
+        <div className={`grid gap-6 ${cards.length === 4 ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
             {cards.map(card => {
                 const c = colorClasses[card.color]
                 const Icon = card.icon
