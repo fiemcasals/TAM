@@ -176,6 +176,12 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
     }
 
+    const getChecklistStatusLabel = (vci?: { status: string }) => {
+        if (!vci || vci.status === 'pending') return 'Sin iniciar'
+        if (vci.status === 'completed') return 'Terminada'
+        return 'En proceso'
+    }
+
     const getChecklistElapsedSeconds = (vci?: { status: string, accumulated_seconds: number, running_since?: string }) => {
         if (!vci) return 0
         if (vci.status === 'in_progress' && vci.running_since) {
@@ -438,71 +444,83 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                                                     {check.description}
                                                                 </p>
                                                                 <div className="flex items-center gap-2 shrink-0">
-                                                                    {(!vciLog || vciLog.status === 'in_progress') && (
-                                                                        <span className={`font-mono text-xs px-2 py-1 rounded ${vciLog?.status === 'in_progress' ? 'bg-amber-100 text-amber-800' : 'text-slate-300'}`}>
-                                                                            {formatElapsed(elapsedSeconds)}
+                                                                    {!isWorkMode ? (
+                                                                        <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                                                                            vciLog?.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                                            vciLog ? 'bg-amber-100 text-amber-800' :
+                                                                            'bg-slate-100 text-slate-500'
+                                                                        }`}>
+                                                                            {getChecklistStatusLabel(vciLog)}
                                                                         </span>
-                                                                    )}
-                                                                    {vciLog?.status === 'paused' && (
-                                                                        <span className="font-mono text-xs px-2 py-1 rounded bg-slate-200 text-slate-600">
-                                                                            {formatElapsed(elapsedSeconds)} (en pausa)
-                                                                        </span>
-                                                                    )}
-                                                                    {!vciLog && (
-                                                                        <Button
-                                                                            size="sm"
-                                                                            variant="outline"
-                                                                            disabled={isDisabled}
-                                                                            onClick={() => {
-                                                                                if (vAct.status === 'pending') updateActivityStatus(vAct.id, 'in_progress', currentUser!.name)
-                                                                                handleToggleChecklist(vAct.id, activity.id, check.id, 'start')
-                                                                            }}
-                                                                        >
-                                                                            Iniciar
-                                                                        </Button>
-                                                                    )}
-                                                                    {vciLog?.status === 'in_progress' && (
-                                                                        <Button
-                                                                            size="sm"
-                                                                            variant="outline"
-                                                                            className="text-amber-700 border-amber-200 hover:bg-amber-50"
-                                                                            disabled={isDisabled}
-                                                                            onClick={() => handleToggleChecklist(vAct.id, activity.id, check.id, 'pause')}
-                                                                        >
-                                                                            Detener
-                                                                        </Button>
-                                                                    )}
-                                                                    {vciLog?.status === 'paused' && (
+                                                                    ) : (
                                                                         <>
-                                                                            <Button
-                                                                                size="sm"
-                                                                                variant="outline"
-                                                                                className="text-blue-700 border-blue-200 hover:bg-blue-50"
-                                                                                disabled={isDisabled}
-                                                                                onClick={() => handleToggleChecklist(vAct.id, activity.id, check.id, 'resume')}
-                                                                            >
-                                                                                Retomar
-                                                                            </Button>
-                                                                            <Button
-                                                                                size="sm"
-                                                                                className="bg-green-600 hover:bg-green-700 text-white"
-                                                                                disabled={isDisabled}
-                                                                                onClick={() => handleToggleChecklist(vAct.id, activity.id, check.id, 'complete')}
-                                                                            >
-                                                                                Finalizar
-                                                                            </Button>
+                                                                            {(!vciLog || vciLog.status === 'in_progress') && (
+                                                                                <span className={`font-mono text-xs px-2 py-1 rounded ${vciLog?.status === 'in_progress' ? 'bg-amber-100 text-amber-800' : 'text-slate-300'}`}>
+                                                                                    {formatElapsed(elapsedSeconds)}
+                                                                                </span>
+                                                                            )}
+                                                                            {vciLog?.status === 'paused' && (
+                                                                                <span className="font-mono text-xs px-2 py-1 rounded bg-slate-200 text-slate-600">
+                                                                                    {formatElapsed(elapsedSeconds)} (en pausa)
+                                                                                </span>
+                                                                            )}
+                                                                            {!vciLog && (
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    variant="outline"
+                                                                                    disabled={isDisabled}
+                                                                                    onClick={() => {
+                                                                                        if (vAct.status === 'pending') updateActivityStatus(vAct.id, 'in_progress', currentUser!.name)
+                                                                                        handleToggleChecklist(vAct.id, activity.id, check.id, 'start')
+                                                                                    }}
+                                                                                >
+                                                                                    Iniciar
+                                                                                </Button>
+                                                                            )}
+                                                                            {vciLog?.status === 'in_progress' && (
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    variant="outline"
+                                                                                    className="text-amber-700 border-amber-200 hover:bg-amber-50"
+                                                                                    disabled={isDisabled}
+                                                                                    onClick={() => handleToggleChecklist(vAct.id, activity.id, check.id, 'pause')}
+                                                                                >
+                                                                                    Detener
+                                                                                </Button>
+                                                                            )}
+                                                                            {vciLog?.status === 'paused' && (
+                                                                                <>
+                                                                                    <Button
+                                                                                        size="sm"
+                                                                                        variant="outline"
+                                                                                        className="text-blue-700 border-blue-200 hover:bg-blue-50"
+                                                                                        disabled={isDisabled}
+                                                                                        onClick={() => handleToggleChecklist(vAct.id, activity.id, check.id, 'resume')}
+                                                                                    >
+                                                                                        Retomar
+                                                                                    </Button>
+                                                                                    <Button
+                                                                                        size="sm"
+                                                                                        className="bg-green-600 hover:bg-green-700 text-white"
+                                                                                        disabled={isDisabled}
+                                                                                        onClick={() => handleToggleChecklist(vAct.id, activity.id, check.id, 'complete')}
+                                                                                    >
+                                                                                        Finalizar
+                                                                                    </Button>
+                                                                                </>
+                                                                            )}
+                                                                            {vciLog?.status === 'completed' && (
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    variant="ghost"
+                                                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                                    disabled={isDisabled}
+                                                                                    onClick={() => handleToggleChecklist(vAct.id, activity.id, check.id, 'reset')}
+                                                                                >
+                                                                                    Deshacer
+                                                                                </Button>
+                                                                            )}
                                                                         </>
-                                                                    )}
-                                                                    {vciLog?.status === 'completed' && (
-                                                                        <Button
-                                                                            size="sm"
-                                                                            variant="ghost"
-                                                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                                            disabled={isDisabled}
-                                                                            onClick={() => handleToggleChecklist(vAct.id, activity.id, check.id, 'reset')}
-                                                                        >
-                                                                            Deshacer
-                                                                        </Button>
                                                                     )}
                                                                 </div>
                                                             </div>
