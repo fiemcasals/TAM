@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { getVehicles, updateVehicle } from "@/lib/actions/plantaActions"
 import { useAuthStore } from "@/lib/store/auth"
-import { Shield, Search } from "lucide-react"
+import { Shield, Search, Pencil } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -41,6 +41,19 @@ export default function FlotaPage() {
         const v = vehicles.find(x => x.id === id)
         if (!v) return
         const res = await updateVehicle(id, { ni: v.ni, origen_unit: v.origen_unit, status: v.status, army_status })
+        if (res.success) {
+            loadData()
+        } else {
+            alert(res.message)
+        }
+    }
+
+    const handleEditObservations = async (id: string) => {
+        const v = vehicles.find(x => x.id === id)
+        if (!v) return
+        const value = window.prompt("Detalles / observaciones del vehículo:", v.observations || "")
+        if (value === null) return
+        const res = await updateVehicle(id, { ni: v.ni, origen_unit: v.origen_unit, status: v.status, observations: value })
         if (res.success) {
             loadData()
         } else {
@@ -99,6 +112,7 @@ export default function FlotaPage() {
                                     <th className="px-6 py-3">Identificador (NI)</th>
                                     <th className="px-6 py-3">Unidad de Origen</th>
                                     <th className="px-6 py-3">Estado Actual</th>
+                                    <th className="px-6 py-3">Detalles</th>
                                     <th className="px-6 py-3 text-right">Acciones</th>
                                 </tr>
                             </thead>
@@ -122,6 +136,21 @@ export default function FlotaPage() {
                                                 <option value="discarded">Descartado (No Apto)</option>
                                             </select>
                                         </td>
+                                        <td className="px-6 py-4 max-w-xs">
+                                            <div className="flex items-start gap-2">
+                                                <p className="text-slate-600 text-xs flex-1 truncate" title={v.observations || undefined}>
+                                                    {v.observations || <span className="italic text-slate-400">Sin detalles</span>}
+                                                </p>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleEditObservations(v.id)}
+                                                    className="text-slate-400 hover:text-slate-700 shrink-0"
+                                                    title="Editar detalles"
+                                                >
+                                                    <Pencil className="h-3.5 w-3.5" />
+                                                </button>
+                                            </div>
+                                        </td>
                                         <td className="px-6 py-4 text-right">
                                             <Button
                                                 size="sm"
@@ -137,7 +166,7 @@ export default function FlotaPage() {
                                     </tr>
                                 ))}
                                 {filteredVehicles.length === 0 && (
-                                    <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-500">No hay vehículos en el ejército con ese filtro.</td></tr>
+                                    <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">No hay vehículos en el ejército con ese filtro.</td></tr>
                                 )}
                             </tbody>
                         </table>

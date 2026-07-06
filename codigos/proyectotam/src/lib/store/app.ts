@@ -106,7 +106,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
             origen_unit: data.origen_unit ?? existing.origen_unit,
             status: data.status ?? existing.status,
             assigned_operators: data.assigned_operators ?? existing.assigned_operators,
-            army_status: data.army_status ?? existing.army_status
+            army_status: data.army_status ?? existing.army_status,
+            observations: data.observations ?? existing.observations
         })
         await get().fetchData()
     },

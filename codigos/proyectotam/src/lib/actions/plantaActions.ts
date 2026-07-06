@@ -81,7 +81,7 @@ export async function updateVehicleStatus(id: string, status: string) {
   }
 }
 
-export async function updateVehicle(id: string, data: { ni: string, origen_unit: string, status: string, assigned_operators?: string[], army_status?: string }) {
+export async function updateVehicle(id: string, data: { ni: string, origen_unit: string, status: string, assigned_operators?: string[], army_status?: string, observations?: string }) {
   try {
     const session = await getSession()
     if (!session || (session.role !== 'project_manager' && session.role !== 'supervisor')) {
@@ -101,7 +101,8 @@ export async function updateVehicle(id: string, data: { ni: string, origen_unit:
         status: data.status,
         status_updated_at: data.status !== existing.status ? new Date() : undefined,
         assigned_operators: data.assigned_operators,
-        army_status: data.army_status
+        army_status: data.army_status,
+        observations: data.observations
       }
     })
     return { success: true, vehicle: updated }

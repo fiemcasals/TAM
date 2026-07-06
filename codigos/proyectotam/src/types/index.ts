@@ -22,6 +22,7 @@ export interface Vehicle {
     army_status?: ArmyStatus
     entry_date: string
     status_updated_at?: string
+    observations?: string
     assigned_operators?: string[]
 }
 
