@@ -72,16 +72,18 @@ export default function DashboardPage() {
           </Card>
         </Link>
 
-        <Card className="hover:border-red-500 transition-colors cursor-pointer bg-red-50/50">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-red-700">En Depósito</CardTitle>
-            <Archive className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-red-900">{tankStats.in_deposit}</div>
-            <p className="text-xs text-red-600 mt-1">A la espera de ingreso</p>
-          </CardContent>
-        </Card>
+        <Link href="/en-deposito" className="block focus:outline-none focus:ring-2 focus:ring-red-500 rounded-xl">
+          <Card className="hover:border-red-500 transition-colors cursor-pointer bg-red-50/50 h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-red-700">En Depósito</CardTitle>
+              <Archive className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-red-900">{tankStats.in_deposit}</div>
+              <p className="text-xs text-red-600 mt-1">A la espera de ingreso ➔</p>
+            </CardContent>
+          </Card>
+        </Link>
 
         <Link href="/flota" className="block focus:outline-none focus:ring-2 focus:ring-green-500 rounded-xl">
           <Card className="hover:border-green-500 transition-colors cursor-pointer bg-green-50/50">

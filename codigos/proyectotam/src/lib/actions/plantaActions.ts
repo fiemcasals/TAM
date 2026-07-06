@@ -63,9 +63,17 @@ export async function updateVehicleStatus(id: string, status: string) {
       return { success: false, message: "No autorizado." }
     }
 
+    const existing = await prisma.vehicle.findUnique({ where: { id } })
+    if (!existing) {
+      return { success: false, message: "Vehículo no encontrado." }
+    }
+
     const updated = await prisma.vehicle.update({
       where: { id },
-      data: { status }
+      data: {
+        status,
+        status_updated_at: status !== existing.status ? new Date() : undefined
+      }
     })
     return { success: true, vehicle: updated }
   } catch (e) {
@@ -80,12 +88,18 @@ export async function updateVehicle(id: string, data: { ni: string, origen_unit:
       return { success: false, message: "No autorizado. Se requieren permisos de Project Manager o Supervisor." }
     }
 
+    const existing = await prisma.vehicle.findUnique({ where: { id } })
+    if (!existing) {
+      return { success: false, message: "Vehículo no encontrado." }
+    }
+
     const updated = await prisma.vehicle.update({
       where: { id },
       data: {
         ni: data.ni,
         origen_unit: data.origen_unit,
         status: data.status,
+        status_updated_at: data.status !== existing.status ? new Date() : undefined,
         assigned_operators: data.assigned_operators,
         army_status: data.army_status
       }

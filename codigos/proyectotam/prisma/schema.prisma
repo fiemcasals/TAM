@@ -25,6 +25,7 @@ model Vehicle {
   status      String   @default("in_army") // in_army, in_deposit, in_plant, in_service
   army_status String   @default("uninspected") // uninspected, selected, discarded
   entry_date  DateTime @default(now())
+  status_updated_at DateTime @default(now()) // fecha desde la que el vehículo está en su status actual
   assigned_operators String[] @default([])
 
   activities  VehicleActivity[]
