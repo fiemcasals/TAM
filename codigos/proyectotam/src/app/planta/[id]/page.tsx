@@ -7,7 +7,7 @@ import { useAuthStore } from "@/lib/store/auth"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Clock, Box, Plus, Trash2, Maximize2, Minimize2, Pencil, Users, MessageSquareText } from "lucide-react"
+import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Clock, Box, Plus, Trash2, Pencil, Users, MessageSquareText } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { ObservationsModal } from "@/components/vehicles/ObservationsModal"
 import type { Activity } from "@/types"
@@ -116,7 +116,6 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
     const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null)
     const [selectedSerialNumber, setSelectedSerialNumber] = useState<string>("")
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-    const [isModalExpanded, setIsModalExpanded] = useState(false)
     // Assign Operators state
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
     const [selectedOperators, setSelectedOperators] = useState<string[]>([])
@@ -267,7 +266,6 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
             setSearchQuery("")
             setSelectedSerialNumber("")
             setIsDropdownOpen(false)
-            setIsModalExpanded(false)
         }
     }
 
@@ -458,7 +456,6 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                                         setSelectedBatchId(null);
                                                         setSearchQuery("");
                                                         setIsDropdownOpen(false);
-                                                        setIsModalExpanded(false);
                                                     }}
                                                 >
                                                     <Plus className="h-4 w-4 mr-1" /> Usar Material
@@ -896,30 +893,18 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
 
             {/* Consume Material Modal */}
             {isConsumeModalOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className={`bg-white rounded-xl shadow-2xl w-full border border-slate-200 overflow-hidden flex flex-col transition-all duration-300 ${isModalExpanded ? 'max-w-4xl h-[80vh]' : 'max-w-md h-auto'}`}>
-                        <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center">
+                    <div className="bg-white shadow-2xl w-screen h-screen max-w-none overflow-hidden flex flex-col">
+                        <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
                             <h2 className="text-lg font-bold text-slate-900">Registrar Uso de Insumo</h2>
-                            <button
-                                type="button"
-                                onClick={() => setIsModalExpanded(!isModalExpanded)}
-                                className="text-slate-400 hover:text-slate-600 focus:outline-none p-1.5 rounded-lg hover:bg-slate-200 transition-colors"
-                                title={isModalExpanded ? "Reducir ventana" : "Ampliar ventana"}
-                            >
-                                {isModalExpanded ? (
-                                    <Minimize2 className="h-4 w-4" />
-                                ) : (
-                                    <Maximize2 className="h-4 w-4" />
-                                )}
-                            </button>
                         </div>
 
-                        <form onSubmit={handleConsumeSubmit} className="p-6 flex flex-col h-full overflow-hidden space-y-4">
+                        <form onSubmit={handleConsumeSubmit} className="p-6 flex flex-col flex-1 overflow-hidden space-y-4">
                             <div className="bg-blue-50 text-blue-800 text-xs p-3 rounded border border-blue-100">
                                 Busque el insumo que va a consumir. El sistema verificará el stock inmediatamente y descontará la cantidad seleccionada.
                             </div>
 
-                            <div className={`flex-1 ${isModalExpanded ? 'grid grid-cols-2 gap-6 overflow-hidden' : 'space-y-4'}`}>
+                            <div className="flex-1 grid grid-cols-2 gap-6 overflow-hidden">
                                 <div className="space-y-4 flex flex-col justify-start">
                                     <div className="space-y-2 relative">
                                         <label className="text-sm font-semibold text-slate-700">Seleccionar Material</label>
@@ -982,39 +967,12 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                                     )}
                                                     <Button variant="ghost" size="sm" type="button" onClick={() => { setSelectedBatchId(null); setSelectedSerialNumber(""); }} className="h-8 text-xs text-slate-500 hover:text-slate-700">Cambiar</Button>
                                                 </div>
-
-                                                {/* If it has serial numbers and NOT expanded, show a secondary dropdown to pick exactly which one */}
-                                                {!isModalExpanded && selectedBatch?.serial_numbers && selectedBatch.serial_numbers.length > 0 && (
-                                                    <div className="space-y-2 pt-2">
-                                                        <label className="text-sm font-semibold text-slate-700">Número de Serie Específico</label>
-                                                        <select
-                                                            className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                            value={selectedSerialNumber}
-                                                            onChange={e => setSelectedSerialNumber(e.target.value)}
-                                                            required
-                                                        >
-                                                            <option value="" disabled>-- Seleccione el N° de Serie --</option>
-                                                            {selectedBatch.serial_numbers.map(sn => (
-                                                                <option key={sn} value={sn}>{sn}</option>
-                                                            ))}
-                                                        </select>
-                                                        <p className="text-xs text-slate-500">Este repuesto está seriado. La cantidad a descontar será 1.</p>
-                                                    </div>
-                                                )}
                                             </div>
                                         )}
                                     </div>
-
-                                    {!isModalExpanded && !selectedBatch?.serial_numbers?.length && (
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-slate-700">Cantidad a utilizar</label>
-                                            <Input name="quantity" type="number" min={1} max={selectedBatch ? selectedBatch.available_quantity : 999} defaultValue={1} required disabled={!selectedBatch} />
-                                        </div>
-                                    )}
                                 </div>
 
-                                {isModalExpanded && (
-                                    <div className="space-y-4 border-l border-slate-100 pl-6 flex flex-col justify-start">
+                                <div className="space-y-4 border-l border-slate-100 pl-6 flex flex-col justify-start">
                                         {!selectedBatchId ? (
                                             <div className="flex-1 flex flex-col items-center justify-center text-slate-400 text-sm border-2 border-dashed border-slate-200 rounded-xl p-6">
                                                 <Box className="h-10 w-10 mb-2 opacity-50 text-slate-300 animate-pulse" />
@@ -1050,11 +1008,10 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                                             </div>
                                         )}
                                     </div>
-                                )}
                             </div>
 
                             <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
-                                <Button type="button" variant="ghost" onClick={() => { setIsConsumeModalOpen(false); setSelectedVehicleActivityId(null); setSelectedBatchId(null); setSelectedSerialNumber(""); setIsDropdownOpen(false); setIsModalExpanded(false); }}>Cancelar</Button>
+                                <Button type="button" variant="ghost" onClick={() => { setIsConsumeModalOpen(false); setSelectedVehicleActivityId(null); setSelectedBatchId(null); setSelectedSerialNumber(""); setIsDropdownOpen(false); }}>Cancelar</Button>
                                 <Button type="submit" className="bg-blue-600 hover:bg-blue-700 font-semibold px-6" disabled={!selectedBatchId || (!!selectedBatch?.serial_numbers?.length && !selectedSerialNumber)}>Consumir</Button>
                             </div>
                         </form>
@@ -1063,14 +1020,14 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
             )}
             {/* Assign Operators Modal */}
             {isAssignModalOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md border border-slate-200 overflow-hidden flex flex-col">
-                        <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+                <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center">
+                    <div className="bg-white shadow-2xl w-screen h-screen max-w-none overflow-hidden flex flex-col">
+                        <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-2 shrink-0">
                             <Users className="h-5 w-5 text-blue-600" />
                             <h2 className="text-lg font-bold text-slate-900">Asignar Operarios al Tanque</h2>
                         </div>
-                        
-                        <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+
+                        <div className="p-6 space-y-4 overflow-y-auto flex-1">
                             <p className="text-sm text-slate-500 mb-2">Seleccione los operarios que podrán ver y trabajar en este tanque.</p>
                             <div className="space-y-2">
                                 {users.filter(u => u.role === 'operator').map(op => (
@@ -1099,7 +1056,7 @@ export default function TankDetailView({ params }: { params: Promise<{ id: strin
                             </div>
                         </div>
 
-                        <div className="p-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
+                        <div className="p-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50 shrink-0">
                             <Button type="button" variant="ghost" onClick={() => setIsAssignModalOpen(false)}>Cancelar</Button>
                             <Button type="button" className="bg-blue-600 hover:bg-blue-700" onClick={async () => {
                                 await assignOperatorsToVehicle(vehicle.id, selectedOperators)

@@ -45,8 +45,8 @@ export function ObservationsModal({ vehicleId, vehicleNi, authorName, canAdd, on
     }
 
     return (
-        <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
+        <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center">
+            <div className="bg-white shadow-2xl w-screen h-screen max-w-none overflow-hidden flex flex-col">
                 <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
                     <h2 className="text-lg font-bold text-slate-900">Observaciones — NI {vehicleNi}</h2>
                     <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-700 text-xl leading-none">×</button>

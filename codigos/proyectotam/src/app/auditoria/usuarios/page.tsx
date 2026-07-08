@@ -226,19 +226,19 @@ export default function UsuariosPage() {
 
             {/* Basic Create User Modal */}
             {isModalOpen && (
-                <div 
-                    className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4"
+                <div
+                    className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center"
                     onKeyDown={handleKeyDown}
                 >
-                    <div ref={modalRef} className="bg-white rounded-xl shadow-2xl w-full max-w-md border border-slate-200 overflow-hidden">
-                        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <div ref={modalRef} className="bg-white shadow-2xl w-screen h-screen max-w-none overflow-hidden flex flex-col">
+                        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
                             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                                 <ShieldAlert className="h-5 w-5 text-blue-500" />
                                 Registrar Nuevo Personal
                             </h2>
                         </div>
 
-                        <form onSubmit={handleCreateUser} className="p-6 space-y-4">
+                        <form onSubmit={handleCreateUser} className="p-6 space-y-4 overflow-y-auto flex-1">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700">Nombre</label>
@@ -303,15 +303,15 @@ export default function UsuariosPage() {
             )}
             {/* Reset Password Modal */}
             {resetUserId && (
-                <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md border border-slate-200 overflow-hidden text-slate-800">
-                        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center">
+                    <div className="bg-white shadow-2xl w-screen h-screen max-w-none overflow-hidden flex flex-col text-slate-800">
+                        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
                             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                                 <KeyRound className="h-5 w-5 text-blue-500" />
                                 Restablecer Contraseña
                             </h2>
                         </div>
-                        <form onSubmit={handleResetPassword} className="p-6 space-y-4">
+                        <form onSubmit={handleResetPassword} className="p-6 space-y-4 overflow-y-auto flex-1">
                              <div className="space-y-2">
                                 <label className="text-sm font-medium text-slate-700">Nueva Contraseña Provisoria</label>
                                 <div className="relative">

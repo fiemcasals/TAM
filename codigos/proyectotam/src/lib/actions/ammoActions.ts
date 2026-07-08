@@ -146,6 +146,90 @@ export async function assignAmmunition(vehicleId: string, batchId: string, quant
   }
 }
 
+export async function restoreAmmunitionAction(assignmentId: string) {
+  try {
+    const session = await getSession()
+    if (!session || (session.role !== 'ammo_manager' && session.role !== 'project_manager' && session.role !== 'admin')) {
+      return { success: false, message: "No autorizado" }
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      const assignment = await tx.vehicleAmmunitionAssignment.findUnique({ where: { id: assignmentId } })
+      if (!assignment) {
+        return { success: false, message: "La asignación no existe" }
+      }
+
+      const batch = await tx.ammunitionBatch.findUnique({ where: { id: assignment.ammunition_batch_id } })
+      if (!batch) {
+        return { success: false, message: "El lote de munición ya no existe" }
+      }
+
+      await tx.vehicleAmmunitionAssignment.delete({ where: { id: assignmentId } })
+
+      await tx.ammunitionBatch.update({
+        where: { id: batch.id },
+        data: { available_quantity: batch.available_quantity + assignment.quantity }
+      })
+
+      await tx.auditLog.create({
+        data: {
+          user_id: session.userId,
+          action: 'REVERT_AMMO',
+          entity_type: 'VehicleAmmunitionAssignment',
+          entity_id: assignmentId,
+          old_value: JSON.stringify({ vehicleId: assignment.vehicle_id, batchId: assignment.ammunition_batch_id, quantity: assignment.quantity })
+        }
+      })
+
+      return { success: true }
+    })
+  } catch (error) {
+    console.error("Restore Ammunition Action Error:", error)
+    return { success: false, message: "Error al revertir la asignación de munición." }
+  }
+}
+
+export async function getAmmunitionReport() {
+  try {
+    const session = await getSession()
+    if (!session) {
+      return { success: false, message: "No autenticado" }
+    }
+
+    const assignments = await prisma.vehicleAmmunitionAssignment.findMany({
+      include: {
+        batch: {
+          include: {
+            ammunition: true
+          }
+        },
+        vehicle: true
+      },
+      orderBy: { assigned_at: 'desc' }
+    })
+
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        lastName: true,
+        email: true
+      }
+    })
+
+    return {
+      success: true,
+      data: {
+        assignments: JSON.parse(JSON.stringify(assignments)),
+        users: JSON.parse(JSON.stringify(users))
+      }
+    }
+  } catch (error) {
+    console.error("getAmmunitionReport Error:", error)
+    return { success: false, message: "Error al obtener el reporte de munición." }
+  }
+}
+
 export async function getAssignedAmmunition(vehicleId: string) {
     try {
         const assignments = await prisma.vehicleAmmunitionAssignment.findMany({

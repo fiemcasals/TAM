@@ -1,27 +1,44 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getAmmunition, addAmmunition, addAmmunitionBatch, assignAmmunition } from "@/lib/actions/ammoActions"
+import { getAmmunition, addAmmunition, addAmmunitionBatch, assignAmmunition, getAmmunitionReport, restoreAmmunitionAction } from "@/lib/actions/ammoActions"
 import { getVehicles } from "@/lib/actions/plantaActions"
 import { useAuthStore } from "@/lib/store/auth"
-import { Target, Search, Plus, PackageOpen, Rocket } from "lucide-react"
+import { Target, Search, Plus, PackageOpen, Rocket, History, Undo2, User, Calendar } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import type { Ammunition, Vehicle } from "@/types"
+import type { Ammunition, Vehicle, VehicleAmmunitionAssignment } from "@/types"
+
+interface AppUser {
+    id: string
+    name: string
+    lastName?: string
+    email: string
+}
 
 export default function MunicionPage() {
     const { currentUser } = useAuthStore()
     const isManager = currentUser?.role === 'project_manager' || currentUser?.role === 'ammo_manager' || currentUser?.role === 'admin'
 
+    const [activeTab, setActiveTab] = useState<"stock" | "assigned">("stock")
     const [ammoList, setAmmoList] = useState<Ammunition[]>([])
     const [vehicles, setVehicles] = useState<Vehicle[]>([])
+    const [assignments, setAssignments] = useState<VehicleAmmunitionAssignment[]>([])
+    const [users, setUsers] = useState<AppUser[]>([])
     const [loading, setLoading] = useState(true)
+    const [loadingReport, setLoadingReport] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
 
     useEffect(() => {
         loadData()
     }, [])
+
+    useEffect(() => {
+        if (activeTab === "assigned") {
+            loadReport()
+        }
+    }, [activeTab])
 
     const loadData = async () => {
         setLoading(true)
@@ -40,6 +57,49 @@ export default function MunicionPage() {
             console.error(error)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const loadReport = async () => {
+        setLoadingReport(true)
+        try {
+            const res = await getAmmunitionReport()
+            if (res.success && res.data) {
+                setAssignments(res.data.assignments || [])
+                setUsers(res.data.users || [])
+            }
+        } catch (error) {
+            console.error(error)
+        } finally {
+            setLoadingReport(false)
+        }
+    }
+
+    const getOperatorName = (id: string) => {
+        const user = users.find(u => u.id === id)
+        if (!user) return `Operario #${id.substring(0, 4)}`
+        return `${user.name} ${user.lastName || ""}`.trim()
+    }
+
+    const formatDate = (dateStr: string) => {
+        if (!dateStr) return "-"
+        return new Date(dateStr).toLocaleDateString("es-AR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        })
+    }
+
+    const handleRevert = async (assignmentId: string) => {
+        if (!confirm("¿Revertir esta asignación de munición? El stock volverá al depósito.")) return
+        const res = await restoreAmmunitionAction(assignmentId)
+        if (res.success) {
+            loadReport()
+            loadData()
+        } else {
+            alert(res.message || "Error al revertir la asignación")
         }
     }
 
@@ -119,6 +179,98 @@ export default function MunicionPage() {
                 </div>
             </div>
 
+            <div className="flex border-b border-slate-200 gap-2">
+                <button
+                    onClick={() => setActiveTab("stock")}
+                    className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-t-lg transition-all ${
+                        activeTab === "stock"
+                            ? "bg-white border border-b-0 border-slate-200 text-slate-900"
+                            : "text-slate-500 hover:text-slate-800"
+                    }`}
+                >
+                    <PackageOpen className="h-4 w-4" />
+                    Inventario
+                </button>
+                <button
+                    onClick={() => setActiveTab("assigned")}
+                    className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-t-lg transition-all ${
+                        activeTab === "assigned"
+                            ? "bg-white border border-b-0 border-slate-200 text-slate-900"
+                            : "text-slate-500 hover:text-slate-800"
+                    }`}
+                >
+                    <History className="h-4 w-4" />
+                    Asignaciones (Trazabilidad)
+                </button>
+            </div>
+
+            {activeTab === "assigned" ? (
+                <Card>
+                    <CardHeader className="bg-slate-50 border-b pb-4">
+                        <CardTitle className="text-lg">Historial de Asignaciones a Vehículos</CardTitle>
+                        <CardDescription>Munición entregada a unidades para pruebas de tiro. Se puede revertir para devolver el stock al depósito.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        {loadingReport ? (
+                            <div className="p-8 text-center text-slate-500">Cargando asignaciones...</div>
+                        ) : (
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+                                    <tr>
+                                        <th className="px-6 py-3">Munición / Lote</th>
+                                        <th className="px-6 py-3">Vehículo</th>
+                                        <th className="px-6 py-3 text-center">Cantidad</th>
+                                        <th className="px-6 py-3">Asignado Por</th>
+                                        <th className="px-6 py-3">Fecha</th>
+                                        <th className="px-6 py-3 text-right">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {assignments.map(a => (
+                                        <tr key={a.id} className="hover:bg-slate-50/50">
+                                            <td className="px-6 py-4">
+                                                <p className="font-bold text-slate-900">{a.batch?.ammunition?.type} ({a.batch?.ammunition?.caliber})</p>
+                                                <span className="text-xs text-slate-500">Lote: {a.batch?.batch_number || "S/N"}</span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="font-bold text-blue-700">NI: {a.vehicle?.ni}</span>
+                                                <p className="text-xs text-slate-500">{a.vehicle?.origen_unit}</p>
+                                            </td>
+                                            <td className="px-6 py-4 text-center font-bold">{a.quantity}</td>
+                                            <td className="px-6 py-4 text-xs text-slate-600">
+                                                <span className="flex items-center gap-1">
+                                                    <User className="h-3.5 w-3.5 text-slate-400" />
+                                                    {getOperatorName(a.operator_id)}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-xs text-slate-500">
+                                                <span className="flex items-center gap-1">
+                                                    <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                                                    {formatDate(a.assigned_at)}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="text-red-600 border-red-200 hover:bg-red-50"
+                                                    onClick={() => handleRevert(a.id)}
+                                                >
+                                                    <Undo2 className="h-3.5 w-3.5 mr-1" />
+                                                    Revertir
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {assignments.length === 0 && (
+                                        <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500">No hay asignaciones de munición registradas.</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        )}
+                    </CardContent>
+                </Card>
+            ) : (
             <div className="grid md:grid-cols-3 gap-6">
                 {/* Stock Table */}
                 <div className="md:col-span-2 space-y-6">
@@ -283,6 +435,7 @@ export default function MunicionPage() {
                     </Card>
                 </div>
             </div>
+            )}
         </div>
     )
 }

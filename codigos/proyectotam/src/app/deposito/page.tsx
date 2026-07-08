@@ -274,15 +274,15 @@ export default function DepositoPage() {
 
             {/* 2. Modal Ingreso Stock Multi-Series */}
             {isStockModalOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+                <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center">
+                    <div className="bg-white shadow-2xl w-screen h-screen max-w-none overflow-hidden flex flex-col">
                         <div className="p-4 border-b border-slate-100 bg-slate-50 shrink-0">
                             <h2 className="text-lg font-bold text-slate-900">
                                 Agregar Insumos al Depósito
                             </h2>
                             <p className="text-xs text-slate-500 mt-1">Llene los datos. Las series se desplegarán según la cantidad.</p>
                         </div>
-                        <form onSubmit={handleAddStock} className="p-6 space-y-4 overflow-y-auto">
+                        <form onSubmit={handleAddStock} className="p-6 space-y-4 overflow-y-auto flex-1">
 
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-slate-700">Categoría / Familia</label>
@@ -370,15 +370,15 @@ export default function DepositoPage() {
 
             {/* 2.b Modal Editar Stock */}
             {isStockEditModalOpen && stockToEdit && (
-                <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+                <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center">
+                    <div className="bg-white shadow-2xl w-screen h-screen max-w-none overflow-hidden flex flex-col">
                         <div className="p-4 border-b border-slate-100 bg-slate-50 shrink-0">
                             <h2 className="text-lg font-bold text-slate-900">
                                 Editar Entrada de Stock
                             </h2>
                             <p className="text-xs text-slate-500 mt-1">Modifique los datos o números de serie del insumo.</p>
                         </div>
-                        <form onSubmit={handleEditStock} className="p-6 space-y-4 overflow-y-auto">
+                        <form onSubmit={handleEditStock} className="p-6 space-y-4 overflow-y-auto flex-1">
 
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-slate-700">Categoría / Familia</label>
@@ -467,12 +467,12 @@ export default function DepositoPage() {
 
             {/* 3. Detail View Serials Modal */}
             {viewSerialsModal && (
-                <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm border border-slate-200 overflow-hidden">
-                        <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center">
+                    <div className="bg-white shadow-2xl w-screen h-screen max-w-none overflow-hidden flex flex-col">
+                        <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
                             <h2 className="text-lg font-bold text-slate-900">Series Almacenadas</h2>
                         </div>
-                        <div className="p-6 max-h-[60vh] overflow-y-auto">
+                        <div className="p-6 overflow-y-auto flex-1">
                             {viewSerialsModal.serial_numbers && viewSerialsModal.serial_numbers.length > 0 ? (
                                 <ul className="space-y-2">
                                     {viewSerialsModal.serial_numbers.map((sn, idx) => (
